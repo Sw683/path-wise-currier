@@ -10,6 +10,9 @@ import {
   StudentVerificationRecord,
   ReactionType,
   CollegeStory,
+  FullOnboardingProfile,
+  Layer2Project,
+  Layer2Experience,
 } from '../types/campus';
 import {
   INITIAL_POSTS,
@@ -22,6 +25,7 @@ import {
   DEFAULT_VERIFICATION_RECORD,
   COLLEGE_STORIES,
   COLLEGES,
+  DEFAULT_ONBOARDING_PROFILE,
 } from '../data/campusData';
 
 const CAMPUS_STORAGE_KEY = 'unisphere-campus-state-v2';
@@ -90,6 +94,12 @@ export interface CampusContextType {
   toggleJoinCollegeGroup: (collegeId: string) => void;
   selectedCollegeGroup: string;
   setSelectedCollegeGroup: (collegeId: string) => void;
+
+  // Student Onboarding & Profile Graph
+  onboardingProfile: FullOnboardingProfile;
+  saveOnboardingProfile: (profile: FullOnboardingProfile) => void;
+  updateLayer2Profile: (projects: Layer2Project[], experiences: Layer2Experience[]) => void;
+  resetOnboardingProfile: () => void;
 }
 
 export const ACADEMIC_QUESTIONS: AcademicQuestion[] = [
@@ -204,6 +214,9 @@ export const CampusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [selectedCollegeGroup, setSelectedCollegeGroup] = useState<string>(
     () => stored?.selectedCollegeGroup ?? 'iit-bombay'
   );
+  const [onboardingProfile, setOnboardingProfile] = useState<FullOnboardingProfile>(
+    () => stored?.onboardingProfile ?? DEFAULT_ONBOARDING_PROFILE
+  );
 
   // Auto-persist to localStorage
   useEffect(() => {
@@ -222,6 +235,7 @@ export const CampusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           verification,
           joinedCollegeGroupIds,
           selectedCollegeGroup,
+          onboardingProfile,
         })
       );
     } catch (e) {
@@ -238,6 +252,7 @@ export const CampusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     verification,
     joinedCollegeGroupIds,
     selectedCollegeGroup,
+    onboardingProfile,
   ]);
 
   // Post Actions
@@ -524,6 +539,34 @@ export const CampusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  // Student Onboarding & Profile Graph Handlers
+  const saveOnboardingProfile = (profile: FullOnboardingProfile) => {
+    setOnboardingProfile(profile);
+    if (profile.universityName) {
+      setVerification((prev) => ({
+        ...prev,
+        collegeName: profile.universityName,
+        degreeName: profile.courseOrBranch || profile.department || prev.degreeName,
+      }));
+    }
+  };
+
+  const updateLayer2Profile = (projects: Layer2Project[], experiences: Layer2Experience[]) => {
+    setOnboardingProfile((prev) => {
+      const bonusScore = Math.min(100, Math.max(70, 70 + (projects.length * 8) + (experiences.length * 7)));
+      return {
+        ...prev,
+        projects,
+        experiences,
+        profileStrengthPercent: bonusScore,
+      };
+    });
+  };
+
+  const resetOnboardingProfile = () => {
+    setOnboardingProfile(DEFAULT_ONBOARDING_PROFILE);
+  };
+
   return (
     <CampusContext.Provider
       value={{
@@ -556,6 +599,10 @@ export const CampusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         toggleJoinCollegeGroup,
         selectedCollegeGroup,
         setSelectedCollegeGroup,
+        onboardingProfile,
+        saveOnboardingProfile,
+        updateLayer2Profile,
+        resetOnboardingProfile,
       }}
     >
       {children}

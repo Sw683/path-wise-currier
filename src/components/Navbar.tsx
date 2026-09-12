@@ -28,13 +28,15 @@ export const Navbar: React.FC = () => {
   const { role, setRole, activeTab, setActiveTab, activeProfile, loadDemoProfile, guardianShieldActive } = useApp();
 
   const campusNavItems = [
-    { id: 'campus-feed', label: 'Campus Feed & Media', icon: Globe },
-    { id: 'campus-groups', label: 'College Groups & Stories', icon: Building },
+    { id: 'campus-dashboard', label: 'My Campus Hub', icon: Sparkles },
+    { id: 'campus-feed', label: 'Feed & Media', icon: Globe },
+    { id: 'campus-groups', label: 'Colleges & Stories', icon: Building },
     { id: 'campus-teams', label: 'Squad / Team Finder', icon: Users },
     { id: 'campus-placements', label: 'Placement Journeys', icon: Briefcase },
-    { id: 'campus-compare', label: 'Compare Colleges & ROI', icon: Scale },
-    { id: 'campus-fellowships', label: 'Fellowships & Funding', icon: Rocket },
+    { id: 'campus-compare', label: 'Compare Colleges', icon: Scale },
+    { id: 'campus-fellowships', label: 'Fellowships & Grants', icon: Rocket },
     { id: 'campus-profiler', label: 'AI Fit & ID Standing', icon: Brain },
+    { id: 'campus-onboarding', label: 'Join / Onboarding', icon: Layers },
   ];
 
   const navItems = [

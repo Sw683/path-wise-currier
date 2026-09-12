@@ -283,3 +283,92 @@ export interface StudentVerificationRecord {
   verificationBadges: string[];
   verifiedAt?: string;
 }
+
+export type UserAcademicRole = 'student' | 'teacher_faculty' | 'researcher' | 'other_academic';
+export type EducationStage = 'school' | 'undergraduate' | 'postgraduate' | 'phd_research' | 'faculty';
+export type SkillProficiency = 'beginner' | 'intermediate' | 'advanced';
+
+export interface CategorizedSkill {
+  name: string;
+  category: 'Technology' | 'Creative' | 'Business' | 'Academic / Research' | 'Communication';
+  level: SkillProficiency;
+}
+
+export interface HackathonExperienceDetail {
+  participatedBefore: boolean;
+  count: number;
+  skillsContributed: string[];
+  lookingForSkills: string[];
+}
+
+export interface CollaborationProfile {
+  lookingForConnections: string[]; // e.g., 'Hackathon teammates', 'Research collaborators'
+  canContribute: string[]; // capabilities
+  lookingForSkills: string[]; // specific skills needed, e.g., 'JavaScript', 'PyTorch'
+}
+
+export interface Layer2Project {
+  id: string;
+  title: string;
+  description: string;
+  techStack: string[];
+  linkUrl?: string;
+  teamSize?: number;
+}
+
+export interface Layer2Experience {
+  id: string;
+  type: 'internship' | 'research' | 'hackathon' | 'club' | 'certification';
+  title: string;
+  organization: string;
+  duration?: string;
+  details: string;
+}
+
+export interface FullOnboardingProfile {
+  id: string;
+  fullName: string;
+  avatarUrl: string;
+  role: UserAcademicRole;
+  educationStage: EducationStage;
+  // School fields
+  schoolName?: string;
+  schoolBoard?: string;
+  schoolClass?: string;
+  favoriteSubjects?: string[];
+  difficultSubjects?: string[];
+  learningStyle?: string;
+  // College & University fields
+  universityName: string;
+  collegeName?: string;
+  department: string;
+  courseOrBranch: string;
+  currentYearOrClass: string;
+  semester?: string;
+  specialization?: string;
+  // PhD / Research fields
+  researchArea?: string;
+  currentResearchProject?: string;
+  publicationsCount?: number;
+  // Faculty fields
+  facultyDesignation?: string;
+  subjectsTaught?: string[];
+  mentoringInterests?: string[];
+  // Skills & Interests
+  skills: CategorizedSkill[];
+  isExploringSkillsOnly?: boolean;
+  interests: string[];
+  currentActivities: string[];
+  hackathonDetail?: HackathonExperienceDetail;
+  // Team & Collaboration
+  collaboration: CollaborationProfile;
+  // Goals & Career
+  goals6to12Months: string[];
+  curiousCareerAreas: string[];
+  // Layer 2 Data
+  projects: Layer2Project[];
+  experiences: Layer2Experience[];
+  profileStrengthPercent: number;
+  profileVisibility: 'public' | 'university_only' | 'department_only';
+  completedAt: string;
+}

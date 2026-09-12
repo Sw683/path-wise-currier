@@ -43,15 +43,23 @@ export const HeroSection: React.FC = () => {
 
         <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
           <div className="text-center lg:text-left">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-300/20 bg-brand-400/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-200">
-              <Sparkles className="h-3.5 w-3.5 text-brand-300" />
-              Explore what could fit you
+            <div className="mb-6 flex flex-wrap items-center justify-center lg:justify-start gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-300/20 bg-brand-400/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-200">
+                <Sparkles className="h-3.5 w-3.5 text-brand-300" />
+                Explore what could fit you
+              </div>
+              <button
+                onClick={() => setActiveTab('campus-dashboard')}
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-300 hover:bg-emerald-500/20 transition"
+              >
+                🎓 UniSphere Campus Network Live
+              </button>
             </div>
             <h1 className="font-['Outfit'] text-4xl font-extrabold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
               Discover where your <span className="bg-gradient-to-r from-brand-300 via-brand-400 to-ocean-300 bg-clip-text text-transparent">potential</span> can take you.
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8 lg:mx-0">
-              Start with your curiosity. PathWise helps you explore meaningful directions and the many ways forward.
+              Start with your curiosity. PathWise & UniSphere connect students, faculty, and universities into an active academic and career graph.
             </p>
 
           {/* 3 Main CTAs */}
@@ -60,24 +68,24 @@ export const HeroSection: React.FC = () => {
               onClick={() => setActiveTab('assessment')}
               className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-600/25 transition-all hover:-translate-y-0.5 hover:from-brand-400 hover:to-brand-600 hover:shadow-xl hover:shadow-brand-600/30 active:translate-y-0 sm:min-w-52"
             >
-              Discover My Path
+              Start Student Onboarding
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab('campus-dashboard')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-md sm:min-w-52"
+            >
+              <Users className="h-4 w-4 text-brand-300" />
+              My Campus Hub & Squads
             </button>
 
             <button
               onClick={() => setActiveTab('exams')}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-md sm:min-w-52"
             >
-              <BookOpen className="h-4 w-4 text-brand-300" />
-              Explore Careers
-            </button>
-
-            <button
-              onClick={() => setActiveTab('mentors')}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-md sm:min-w-52"
-            >
-              <Users className="h-4 w-4 text-ocean-300" />
-              Talk to a Professional
+              <BookOpen className="h-4 w-4 text-ocean-300" />
+              Explore Careers & CETs
             </button>
           </div>
 

@@ -25,10 +25,12 @@ import { PlacementJourneys } from './components/campus/PlacementJourneys';
 import { UniversityPlacementCompare } from './components/campus/UniversityPlacementCompare';
 import { StudentFellowshipHub } from './components/campus/StudentFellowshipHub';
 import { BehavioralCompanyFit } from './components/campus/BehavioralCompanyFit';
+import { StudentOnboardingWizard } from './components/onboarding/StudentOnboardingWizard';
+import { PersonalizedCommunityDashboard } from './components/campus/PersonalizedCommunityDashboard';
 
 export const App: React.FC = () => {
   const { activeTab, role } = useApp();
-  const isOnboarding = activeTab === 'assessment';
+  const isOnboarding = activeTab === 'assessment' || activeTab === 'campus-onboarding';
 
   return (
     <div className={`${isOnboarding ? 'min-h-screen bg-slate-950' : 'min-h-screen flex flex-col bg-slate-50'} text-slate-900 font-sans selection:bg-brand-500 selection:text-white`}>
@@ -43,10 +45,11 @@ export const App: React.FC = () => {
         {activeTab === 'campus-compare' && <UniversityPlacementCompare />}
         {activeTab === 'campus-fellowships' && <StudentFellowshipHub />}
         {activeTab === 'campus-profiler' && <BehavioralCompanyFit />}
+        {activeTab === 'campus-dashboard' && <PersonalizedCommunityDashboard />}
 
         {/* Existing Routes */}
         {activeTab === 'home' && <HeroSection />}
-        {activeTab === 'assessment' && <OnboardingWizard />}
+        {(activeTab === 'assessment' || activeTab === 'campus-onboarding') && <StudentOnboardingWizard />}
         {activeTab === 'dashboard' && <RoadmapDashboard />}
         {activeTab === 'simulator' && <PathSimulator />}
         {activeTab === 'tree' && <CareerTreeVisualizer />}
