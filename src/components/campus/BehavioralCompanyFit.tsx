@@ -1,14 +1,5 @@
 import React, { useState } from 'react';
-import {
-  DEFAULT_BEHAVIORAL_PROFILE,
-  DEFAULT_COMPANY_FIT_PREDICTIONS,
-  DEFAULT_VERIFICATION_RECORD,
-} from '../../data/campusData';
-import {
-  BehavioralThinkingProfile,
-  CompanyFitPrediction,
-  StudentVerificationRecord,
-} from '../../types/campus';
+import { useCampus, ACADEMIC_QUESTIONS } from '../../context/CampusContext';
 import {
   Brain,
   Sparkles,
@@ -27,29 +18,52 @@ import {
   HelpCircle,
   Clock,
   Briefcase,
+  Scan,
+  Download,
+  Share2,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 
 export const BehavioralCompanyFit: React.FC = () => {
-  const [profile, setProfile] = useState<BehavioralThinkingProfile>(DEFAULT_BEHAVIORAL_PROFILE);
-  const [companyFits, setCompanyFits] = useState<CompanyFitPrediction[]>(DEFAULT_COMPANY_FIT_PREDICTIONS);
-  const [verification, setVerification] = useState<StudentVerificationRecord>(DEFAULT_VERIFICATION_RECORD);
+  const {
+    behavioralProfile,
+    updateBehavioralProfile,
+    academicEvaluation,
+    submitAcademicQuiz,
+    companyFits,
+    verification,
+    updateVerification,
+  } = useCampus();
 
-  const [activeSection, setActiveSection] = useState<'profile' | 'company_fit' | 'verification'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'academic_quiz' | 'company_fit' | 'verification'>('profile');
 
-  // Interactive Quiz State
+  // Interactive Behavioral Quiz State
   const [quizAnswer1, setQuizAnswer1] = useState<string>('architect');
   const [quizAnswer2, setQuizAnswer2] = useState<string>('first_principles');
   const [quizAnswer3, setQuizAnswer3] = useState<string>('blitzscale');
   const [quizSavedMessage, setQuizSavedMessage] = useState(false);
 
-  // Verification Upload State
-  const [uploadFile, setUploadFile] = useState<string>('');
-  const [uploadEnrollment, setUploadEnrollment] = useState(verification.enrollmentId);
-  const [uploadDegree, setUploadDegree] = useState(verification.degreeName);
-  const [uploadCollege, setUploadCollege] = useState(verification.collegeName);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  // Academic Diagnostic Assessment State
+  const [academicQuizAnswers, setAcademicQuizAnswers] = useState<{ [qId: string]: string }>({
+    'q-1': 'b',
+    'q-2': 'b',
+    'q-3': 'c',
+    'q-4': 'a',
+    'q-5': 'b',
+  });
+  const [quizSubmittedToast, setQuizSubmittedToast] = useState(false);
 
-  const handleUpdateQuiz = (e: React.FormEvent) => {
+  // Verification & ID Card Scanner State
+  const [uploadCollege, setUploadCollege] = useState(verification.collegeName);
+  const [uploadDegree, setUploadDegree] = useState(verification.degreeName);
+  const [uploadEnrollment, setUploadEnrollment] = useState(verification.enrollmentId);
+  const [uploadCgpa, setUploadCgpa] = useState('9.4');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
+  const [cardCopied, setCardCopied] = useState(false);
+
+  const handleUpdateBehavioral = (e: React.FormEvent) => {
     e.preventDefault();
 
     let newNature: any = 'The Deep Architect';
@@ -77,8 +91,7 @@ export const BehavioralCompanyFit: React.FC = () => {
     if (quizAnswer3 === 'enterprise') newLifestyle = 'Enterprise Stability';
     if (quizAnswer3 === 'research') newLifestyle = 'Research & Academia';
 
-    setProfile({
-      ...profile,
+    updateBehavioralProfile({
       natureType: newNature,
       natureDescription: newNatureDesc,
       thinkingStyle: newThinking,
@@ -90,23 +103,51 @@ export const BehavioralCompanyFit: React.FC = () => {
     setTimeout(() => setQuizSavedMessage(false), 3000);
   };
 
-  const handleVerificationSubmit = (e: React.FormEvent) => {
+  const handleAcademicQuizSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setVerification({
-      ...verification,
-      isVerified: true,
-      status: 'verified_student',
-      enrollmentId: uploadEnrollment,
-      degreeName: uploadDegree,
-      collegeName: uploadCollege,
-      verifiedAt: 'Just now (Instant AI OCR Validated)',
-    });
-    setUploadSuccess(true);
-    setTimeout(() => setUploadSuccess(false), 3000);
+    submitAcademicQuiz(academicQuizAnswers);
+    setQuizSubmittedToast(true);
+    setTimeout(() => setQuizSubmittedToast(false), 3000);
+  };
+
+  const handleScanAndVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsScanning(true);
+    setScanComplete(false);
+
+    setTimeout(() => {
+      setIsScanning(false);
+      setScanComplete(true);
+
+      const parsedCgpa = parseFloat(uploadCgpa) || 9.0;
+      const computedCollegePercentile = Math.min(99, Math.round(75 + (parsedCgpa - 7.5) * 12));
+      const computedNationwidePercentile = Math.min(98, Math.round(70 + (parsedCgpa - 7.5) * 11));
+
+      updateVerification({
+        isVerified: true,
+        status: 'verified_student',
+        collegeName: uploadCollege,
+        degreeName: uploadDegree,
+        enrollmentId: uploadEnrollment,
+        collegeStandingPercentile: computedCollegePercentile,
+        nationwideStandingPercentile: computedNationwidePercentile,
+        verifiedAt: 'Validated via University Registry (Instant OCR)',
+      });
+    }, 1800);
   };
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+      {/* Toast */}
+      {quizSubmittedToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span className="text-xs font-medium">
+            Academic Assessment Graded! Company Fit & Standing updated.
+          </span>
+        </div>
+      )}
+
       {/* Banner */}
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -115,13 +156,13 @@ export const BehavioralCompanyFit: React.FC = () => {
               <Brain className="w-3 h-3 text-purple-400" />
               Cognitive & Career Intelligence
             </span>
-            <span className="text-xs text-slate-400">AI Personality & Placement Fit</span>
+            <span className="text-xs text-slate-400">AI Personality & Placement Diagnostic</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white">
             AI Behavioral Profiler & Company Fit Engine
           </h1>
           <p className="text-slate-300 text-sm mt-1 max-w-2xl">
-            Analyze your problem-solving nature, thinking style, and lifestyle preferences. Predict which tier of companies fits you best, and verify your college credentials to see where you stand.
+            Analyze your problem-solving nature, thinking style, and lifestyle preferences. Take the academic level diagnostic to predict your company fit, and verify your student ID to view your verified national standing.
           </p>
         </div>
 
@@ -143,10 +184,10 @@ export const BehavioralCompanyFit: React.FC = () => {
       </div>
 
       {/* Navigation Pills */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveSection('profile')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
             activeSection === 'profile'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
@@ -155,27 +196,41 @@ export const BehavioralCompanyFit: React.FC = () => {
           <Brain className="w-4 h-4 text-purple-400" />
           <span>Behavioral & Lifestyle Profile</span>
         </button>
+
+        <button
+          onClick={() => setActiveSection('academic_quiz')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+            activeSection === 'academic_quiz'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-emerald-400" />
+          <span>Academic Diagnostic Test</span>
+        </button>
+
         <button
           onClick={() => setActiveSection('company_fit')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
             activeSection === 'company_fit'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Target className="w-4 h-4 text-brand-400" />
-          <span>Academic Level & Company Match</span>
+          <span>Company Fit Predictions</span>
         </button>
+
         <button
           onClick={() => setActiveSection('verification')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
             activeSection === 'verification'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Degree Verification & Standing</span>
+          <ShieldCheck className="w-4 h-4 text-indigo-400" />
+          <span>ID Card Verification & Standing</span>
         </button>
       </div>
 
@@ -190,9 +245,11 @@ export const BehavioralCompanyFit: React.FC = () => {
               </span>
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-600" />
-                {profile.natureType}
+                {behavioralProfile.natureType}
               </h2>
-              <p className="text-xs text-slate-600 leading-relaxed">{profile.natureDescription}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {behavioralProfile.natureDescription}
+              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
@@ -201,9 +258,11 @@ export const BehavioralCompanyFit: React.FC = () => {
               </span>
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Brain className="w-5 h-5 text-brand-600" />
-                {profile.thinkingStyle}
+                {behavioralProfile.thinkingStyle}
               </h2>
-              <p className="text-xs text-slate-600 leading-relaxed">{profile.thinkingDescription}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {behavioralProfile.thinkingDescription}
+              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-2">
@@ -212,30 +271,34 @@ export const BehavioralCompanyFit: React.FC = () => {
               </span>
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-indigo-600" />
-                {profile.lifestylePreference}
+                {behavioralProfile.lifestylePreference}
               </h2>
               <div className="space-y-2 pt-2 text-xs">
                 <div>
                   <div className="flex justify-between text-[11px] mb-0.5">
                     <span className="text-slate-500">Execution Velocity</span>
-                    <span className="font-bold text-slate-800">{profile.workPaceScore}%</span>
+                    <span className="font-bold text-slate-800">
+                      {behavioralProfile.workPaceScore}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="bg-purple-600 h-full rounded-full"
-                      style={{ width: `${profile.workPaceScore}%` }}
+                      style={{ width: `${behavioralProfile.workPaceScore}%` }}
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between text-[11px] mb-0.5">
                     <span className="text-slate-500">Autonomy Preference</span>
-                    <span className="font-bold text-slate-800">{profile.autonomyScore}%</span>
+                    <span className="font-bold text-slate-800">
+                      {behavioralProfile.autonomyScore}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="bg-brand-500 h-full rounded-full"
-                      style={{ width: `${profile.autonomyScore}%` }}
+                      style={{ width: `${behavioralProfile.autonomyScore}%` }}
                     />
                   </div>
                 </div>
@@ -243,14 +306,14 @@ export const BehavioralCompanyFit: React.FC = () => {
             </div>
           </div>
 
-          {/* Opportunities Curated for this Profile */}
+          {/* Curated Opportunities */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Target className="w-5 h-5 text-brand-600" />
               Tailored Opportunities Matching Your Nature
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {profile.curatedOpportunities.map((opp, idx) => (
+              {behavioralProfile.curatedOpportunities.map((opp, idx) => (
                 <div
                   key={idx}
                   className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between"
@@ -273,14 +336,14 @@ export const BehavioralCompanyFit: React.FC = () => {
             </div>
           </div>
 
-          {/* Curated Products & Student Developer Packs */}
+          {/* Curated Products */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Laptop className="w-5 h-5 text-indigo-600" />
               Curated Products, Tools & Student Perks
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {profile.curatedProducts.map((prod, idx) => (
+              {behavioralProfile.curatedProducts.map((prod, idx) => (
                 <div
                   key={idx}
                   className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-slate-300 transition flex flex-col justify-between"
@@ -313,16 +376,16 @@ export const BehavioralCompanyFit: React.FC = () => {
             </div>
           </div>
 
-          {/* Retake / Refine Behavioral Assessment */}
+          {/* Behavioral Quiz Form */}
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-3xl border border-purple-100 p-6">
             <h2 className="text-sm font-bold text-purple-950 mb-1">
-              Re-calibrate Your Nature & Thinking Style
+              Fine-tune Behavioral & Lifestyle Parameters
             </h2>
             <p className="text-xs text-purple-800 mb-4">
-              Answer 3 quick preference questions to fine-tune AI recommendations.
+              Update how you approach work to optimize your curated perks and opportunities.
             </p>
 
-            <form onSubmit={handleUpdateQuiz} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form onSubmit={handleUpdateBehavioral} className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-purple-900 mb-1.5">
                   1. How do you tackle a blank canvas problem?
@@ -381,7 +444,7 @@ export const BehavioralCompanyFit: React.FC = () => {
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
                 >
-                  Save & Update AI Profile
+                  Save Profile
                 </button>
               </div>
             </form>
@@ -389,7 +452,123 @@ export const BehavioralCompanyFit: React.FC = () => {
         </div>
       )}
 
-      {/* Section 2: Academic Diagnostic & Company Fit Predictor */}
+      {/* Section 2: Interactive Academic Diagnostic Test */}
+      {activeSection === 'academic_quiz' && (
+        <div className="space-y-6">
+          {/* Diagnostic Summary Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900">
+                    Academic Level Diagnostic Assessment
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    {academicEvaluation.percentageScore}% Score
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Assesses computer science rigor, system design intuition, and quantitative aptitude.
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 block">Evaluated Academic Standing</span>
+                <span className="text-xs font-bold text-brand-600">
+                  {academicEvaluation.evaluatedAcademicLevel}
+                </span>
+              </div>
+            </div>
+
+            {/* Strengths & Focus */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2">
+              <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-2xl">
+                <span className="font-bold text-emerald-950 block mb-1">Demonstrated Strengths:</span>
+                <ul className="space-y-1 text-emerald-800">
+                  {academicEvaluation.strengths.map((s, i) => (
+                    <li key={i} className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-2xl">
+                <span className="font-bold text-indigo-950 block mb-1">Recommended Preparation Focus:</span>
+                <ul className="space-y-1 text-indigo-800">
+                  {academicEvaluation.recommendedFocus.map((f, i) => (
+                    <li key={i} className="flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Question Cards */}
+          <form onSubmit={handleAcademicQuizSubmit} className="space-y-4">
+            {ACADEMIC_QUESTIONS.map((q, idx) => (
+              <div
+                key={q.id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                    Question {idx + 1} • {q.category}
+                  </span>
+                  {academicQuizAnswers[q.id] && (
+                    <span className="text-xs text-slate-400">Answer selected</span>
+                  )}
+                </div>
+
+                <div className="text-xs font-bold text-slate-900 leading-relaxed">
+                  {q.question}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  {q.options.map((opt) => {
+                    const isSelected = academicQuizAnswers[q.id] === opt.id;
+                    return (
+                      <button
+                        type="button"
+                        key={opt.id}
+                        onClick={() =>
+                          setAcademicQuizAnswers((prev) => ({ ...prev, [q.id]: opt.id }))
+                        }
+                        className={`p-3 rounded-xl border text-left text-xs transition ${
+                          isSelected
+                            ? 'bg-brand-50 border-brand-500 text-brand-950 font-semibold shadow-xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="font-bold uppercase mr-1.5">{opt.id})</span>
+                        <span>{opt.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                Submitting recalculates your company fit probability and national percentile rank.
+              </span>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-md transition"
+              >
+                Grade Assessment & Update Fit
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Section 3: Company Fit Predictions */}
       {activeSection === 'company_fit' && (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
@@ -501,16 +680,15 @@ export const BehavioralCompanyFit: React.FC = () => {
         </div>
       )}
 
-      {/* Section 3: Identity & Degree Verification */}
+      {/* Section 4: Student ID & Degree Verification & Standing Card */}
       {activeSection === 'verification' && (
         <div className="space-y-6">
-          {/* Standing Card */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="text-base font-bold text-slate-900">
-                    Official Student Identity & Verified Standing
+                    Official Student Identity Card & Verified Standing
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
@@ -518,17 +696,19 @@ export const BehavioralCompanyFit: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Verified using digital student identity card and university enrollment registrar.
+                  Cryptographically validated using degree enrollment details and college identity card.
                 </p>
               </div>
 
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 block">Verification Timestamp</span>
-                <span className="text-xs font-semibold text-slate-700">{verification.verifiedAt}</span>
+                <span className="text-[10px] text-slate-400 block">Status</span>
+                <span className="text-xs font-semibold text-emerald-700">
+                  {verification.verifiedAt}
+                </span>
               </div>
             </div>
 
-            {/* Standing Percentiles */}
+            {/* Standing Percentile Badges */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-5 rounded-2xl bg-gradient-to-br from-brand-50 to-orange-50 border border-brand-100">
                 <span className="text-xs font-bold text-brand-800 uppercase tracking-wider">
@@ -538,7 +718,7 @@ export const BehavioralCompanyFit: React.FC = () => {
                   Top {100 - verification.collegeStandingPercentile}%
                 </div>
                 <p className="text-xs text-brand-700 mt-1">
-                  Ranked in the 94th percentile among all Computer Science students at {verification.collegeName}.
+                  Ranked in the <strong>{verification.collegeStandingPercentile}th percentile</strong> among peers at {verification.collegeName}.
                 </p>
               </div>
 
@@ -550,45 +730,61 @@ export const BehavioralCompanyFit: React.FC = () => {
                   Top {100 - verification.nationwideStandingPercentile}%
                 </div>
                 <p className="text-xs text-indigo-700 mt-1">
-                  Ranked in the 91st percentile among all verified engineering students nationwide.
+                  Ranked in the <strong>{verification.nationwideStandingPercentile}th percentile</strong> across all verified university engineering students.
                 </p>
               </div>
             </div>
 
-            {/* Earned Badges */}
-            <div>
-              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Earned Credentials & Verification Badges:
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {verification.verificationBadges.map((badge, i) => (
-                  <span
-                    key={i}
-                    className="text-xs font-bold bg-slate-50 border border-slate-200 text-slate-800 px-3 py-1.5 rounded-xl shadow-2xs"
-                  >
-                    {badge}
-                  </span>
-                ))}
+            {/* Digital Student Identity Card (Printable / Shareable) */}
+            <div className="max-w-md mx-auto p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white border border-slate-700 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center font-black text-sm text-white">
+                    U
+                  </div>
+                  <div>
+                    <div className="text-xs font-black tracking-wider text-white">UNISPHERE ID</div>
+                    <div className="text-[9px] text-brand-300">National Student Verification</div>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" /> VERIFIED
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <img
+                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80"
+                  alt="Student"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-brand-400"
+                />
+                <div className="space-y-0.5">
+                  <div className="text-sm font-bold text-white">Aryan Sharma</div>
+                  <div className="text-xs text-slate-300">{verification.collegeName}</div>
+                  <div className="text-[11px] text-brand-300">{verification.degreeName}</div>
+                  <div className="text-[10px] text-slate-400">
+                    Roll: <strong className="text-white">{verification.enrollmentId}</strong> • Batch {verification.graduationYear}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+                <span>Top {100 - verification.collegeStandingPercentile}% University Standing</span>
+                <span>ZK-Proof Hash: 0x8F4...29C</span>
               </div>
             </div>
 
-            {/* Re-verify / Upload Card Details Form */}
+            {/* Simulated OCR Scanner Form */}
             <div className="pt-4 border-t border-slate-100">
-              <h3 className="text-xs font-bold text-slate-900 mb-2">
-                Update or Re-scan College ID Card Details
+              <h3 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-1.5">
+                <Scan className="w-4 h-4 text-brand-600" />
+                <span>Simulate College ID Card OCR Re-scan</span>
               </h3>
 
-              {uploadSuccess && (
-                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
-                  Credentials updated and verified via university records!
-                </div>
-              )}
-
-              <form onSubmit={handleVerificationSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <form onSubmit={handleScanAndVerify} className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    College / University Name
+                    College Name
                   </label>
                   <input
                     type="text"
@@ -625,15 +821,35 @@ export const BehavioralCompanyFit: React.FC = () => {
                   />
                 </div>
 
-                <div className="sm:col-span-3 flex items-center justify-between pt-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    Current CGPA / Grade
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={uploadCgpa}
+                    onChange={(e) => setUploadCgpa(e.target.value)}
+                    placeholder="e.g. 9.4"
+                    className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-4 flex items-center justify-between pt-2">
                   <span className="text-[11px] text-slate-400">
-                    Encrypted zero-knowledge student verification.
+                    {isScanning
+                      ? '⚡ Running OCR computer vision extraction on college ID card...'
+                      : scanComplete
+                      ? '✓ Registry verified: Standing percentiles successfully calibrated.'
+                      : 'Upload ID card image or test credentials to calculate live percentile standing.'}
                   </span>
+
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-black shadow-sm"
+                    disabled={isScanning}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-black disabled:opacity-50 shadow-sm transition"
                   >
-                    Validate Credentials
+                    {isScanning ? 'Scanning...' : 'Scan & Re-verify ID'}
                   </button>
                 </div>
               </form>

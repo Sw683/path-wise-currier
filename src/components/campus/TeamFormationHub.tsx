@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import {
-  SKILLED_STUDENTS,
-  PROJECT_SHOWCASES,
-  COLLEGES,
-} from '../../data/campusData';
+import { COLLEGES } from '../../data/campusData';
+import { useCampus } from '../../context/CampusContext';
 import {
   StudentSkillProfile,
   ProjectShowcase,
@@ -30,12 +27,11 @@ import {
 } from 'lucide-react';
 
 export const TeamFormationHub: React.FC = () => {
+  const { students, projects, addProject, toggleStarProject, verification } = useCampus();
   const [activeTab, setActiveTab] = useState<'find_peers' | 'projects'>('find_peers');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('all');
   const [selectedCollege, setSelectedCollege] = useState('all');
-  const [students, setStudents] = useState<StudentSkillProfile[]>(SKILLED_STUDENTS);
-  const [projects, setProjects] = useState<ProjectShowcase[]>(PROJECT_SHOWCASES);
 
   // Invite Modal State
   const [selectedStudentForInvite, setSelectedStudentForInvite] = useState<StudentSkillProfile | null>(null);
@@ -106,17 +102,7 @@ export const TeamFormationHub: React.FC = () => {
   });
 
   const handleStarProject = (projId: string) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== projId) return p;
-        const starred = !p.userStarred;
-        return {
-          ...p,
-          userStarred: starred,
-          starsCount: starred ? p.starsCount + 1 : p.starsCount - 1,
-        };
-      })
-    );
+    toggleStarProject(projId);
   };
 
   const handleSendSquadInvite = (e: React.FormEvent) => {
@@ -146,27 +132,24 @@ export const TeamFormationHub: React.FC = () => {
     e.preventDefault();
     if (!newProjectTitle.trim()) return;
 
-    const newProj: ProjectShowcase = {
-      id: `proj-${Date.now()}`,
+    addProject({
       title: newProjectTitle.trim(),
       tagline: newProjectTagline.trim() || 'Innovative student collaboration project.',
       description: newProjectDesc.trim(),
       coverImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop&q=80',
       techStack: newProjectTech.split(',').map((t) => t.trim()).filter((t) => t.length > 0),
       creatorName: 'Aryan Sharma (You)',
-      creatorCollege: 'IIT Bombay',
+      creatorCollege: verification.collegeName || 'IIT Bombay',
       creatorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       openRoles: newProjectRoles.filter((r) => r.trim().length > 0).map((role) => ({
         roleName: role.trim(),
         requiredSkills: ['Problem Solving', 'Teamwork'],
         status: 'open',
       })),
-      starsCount: 1,
       userStarred: true,
       targetHackathon: newProjectHackathon.trim() || undefined,
-    };
+    });
 
-    setProjects([newProj, ...projects]);
     setShowNewProjectModal(false);
     setNewProjectTitle('');
     setNewProjectTagline('');

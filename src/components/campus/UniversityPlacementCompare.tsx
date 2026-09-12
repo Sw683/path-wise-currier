@@ -355,6 +355,133 @@ export const UniversityPlacementCompare: React.FC = () => {
         </div>
       </div>
 
+      {/* Interactive Tuition vs Placement Payback ROI Calculator */}
+      <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-xl border border-slate-800 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-base font-bold text-white">
+                Interactive Tuition vs Placement ROI Payback Calculator
+              </h2>
+            </div>
+            <p className="text-xs text-slate-300">
+              Calculate exact degree breakeven months, monthly take-home savings, and 5-year post-grad wealth creation.
+            </p>
+          </div>
+
+          <div className="text-right">
+            <span className="text-[10px] uppercase text-emerald-400 font-bold tracking-wider">
+              Selected Target
+            </span>
+            <div className="text-xs font-bold text-white">{c1.collegeName}</div>
+          </div>
+        </div>
+
+        {/* Calculator Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="space-y-1.5">
+            <label className="block text-slate-300 font-semibold">Target University for ROI</label>
+            <select
+              value={college1Id}
+              onChange={(e) => setCollege1Id(e.target.value)}
+              className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none"
+            >
+              {UNIVERSITY_PLACEMENT_DATA.map((c) => (
+                <option key={c.collegeId} value={c.collegeId}>
+                  {c.collegeName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-slate-300 font-semibold">Scholarship / Fee Concession</label>
+            <select
+              defaultValue="0"
+              id="scholarship-select"
+              className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none"
+            >
+              <option value="0">0% (Full Tuition)</option>
+              <option value="0.25">25% Merit / EWS Concession</option>
+              <option value="0.50">50% Half Waiver</option>
+              <option value="1">100% Full Tuition Free</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-slate-300 font-semibold">Estimated Monthly Living & Hostel</label>
+            <select
+              defaultValue="10000"
+              id="hostel-select"
+              className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none"
+            >
+              <option value="6000">₹6,000 / month (Standard Hostel)</option>
+              <option value="10000">₹10,000 / month (AC / Private PG)</option>
+              <option value="15000">₹15,000 / month (Metro City Living)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Computed Metrics Strip */}
+        {(() => {
+          const fourYearTuition = c1.annualTuitionINR * 4;
+          const fourYearLiving = 10000 * 40; // 40 months
+          const totalDegreeCost = fourYearTuition + fourYearLiving;
+          const avgGrossLpa = d1.avgCtc;
+          const estimatedMonthlyInHand = Math.round(((avgGrossLpa * 100000) * 0.72) / 12);
+          const monthlySavings = Math.round(estimatedMonthlyInHand * 0.55);
+          const paybackMonths = Math.max(1, Math.round(totalDegreeCost / monthlySavings));
+          const fiveYearNetSurplus = (monthlySavings * 60) - totalDegreeCost;
+
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  Total Degree Investment
+                </span>
+                <div className="text-lg font-black text-white">
+                  ₹{(totalDegreeCost / 100000).toFixed(1)} Lakhs
+                </div>
+                <div className="text-[10px] text-slate-400">4-Year Tuition + Living</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  Est. In-Hand Monthly
+                </span>
+                <div className="text-lg font-black text-brand-400">
+                  ₹{estimatedMonthlyInHand.toLocaleString()} / mo
+                </div>
+                <div className="text-[10px] text-slate-400">Post-tax initial in-hand</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  Payback Breakeven Period
+                </span>
+                <div className="text-lg font-black text-emerald-400">
+                  {paybackMonths} Months
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {(paybackMonths / 12).toFixed(1)} years to recover full cost
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  5-Year Net Wealth Surplus
+                </span>
+                <div className="text-lg font-black text-indigo-400">
+                  +₹{(fiveYearNetSurplus / 100000).toFixed(1)} Lakhs
+                </div>
+                <div className="text-[10px] text-slate-400">Net savings over degree cost</div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       {/* Comprehensive University Ranking & Placement Table */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">

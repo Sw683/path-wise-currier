@@ -19,6 +19,7 @@ import { AdminConsole } from './components/AdminConsole';
 import { Footer } from './components/Footer';
 
 import { CampusFeed } from './components/campus/CampusFeed';
+import { ConnectedCollegeGroups } from './components/campus/ConnectedCollegeGroups';
 import { TeamFormationHub } from './components/campus/TeamFormationHub';
 import { PlacementJourneys } from './components/campus/PlacementJourneys';
 import { UniversityPlacementCompare } from './components/campus/UniversityPlacementCompare';
@@ -36,6 +37,7 @@ export const App: React.FC = () => {
       <main className="flex-1">
         {/* Campus Network Routes */}
         {activeTab === 'campus-feed' && <CampusFeed />}
+        {activeTab === 'campus-groups' && <ConnectedCollegeGroups />}
         {activeTab === 'campus-teams' && <TeamFormationHub />}
         {activeTab === 'campus-placements' && <PlacementJourneys />}
         {activeTab === 'campus-compare' && <UniversityPlacementCompare />}

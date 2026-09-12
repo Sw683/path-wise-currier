@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import {
   COLLEGES,
   COLLEGE_STORIES,
-  INITIAL_POSTS,
 } from '../../data/campusData';
+import { useCampus } from '../../context/CampusContext';
 import {
   CommunityPost,
   CollegeStory,
@@ -39,7 +39,16 @@ import {
 } from 'lucide-react';
 
 export const CampusFeed: React.FC = () => {
-  const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
+  const {
+    posts,
+    addPost,
+    reactToPost,
+    votePoll,
+    addComment,
+    toggleBookmark,
+    sharePost,
+    verification,
+  } = useCampus();
   const [selectedCollege, setSelectedCollege] = useState<string>('all');
   const [selectedBranch, setSelectedBranch] = useState<string>('all');
   const [selectedClass, setSelectedClass] = useState<string>('all');
@@ -76,63 +85,23 @@ export const CampusFeed: React.FC = () => {
 
   // Handle adding a new reaction
   const handleReact = (postId: string, reaction: ReactionType) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
-
-        const currentReaction = p.userReaction;
-        const newReactions = { ...p.reactions };
-
-        if (currentReaction === reaction) {
-          // Deselect
-          newReactions[reaction] = Math.max(0, newReactions[reaction] - 1);
-          return { ...p, reactions: newReactions, userReaction: undefined };
-        } else {
-          // If previous reaction existed, decrement it
-          if (currentReaction) {
-            newReactions[currentReaction] = Math.max(0, newReactions[currentReaction] - 1);
-          }
-          // Increment new reaction
-          newReactions[reaction] = (newReactions[reaction] || 0) + 1;
-          return { ...p, reactions: newReactions, userReaction: reaction };
-        }
-      })
-    );
+    reactToPost(postId, reaction);
     setHoveredReactionPostId(null);
   };
 
   // Handle Poll Vote
   const handleVotePoll = (postId: string, optionId: string) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId || !p.poll || p.poll.userVotedOptionId) return p;
-
-        const updatedOptions = p.poll.options.map((opt) =>
-          opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-        );
-
-        return {
-          ...p,
-          poll: {
-            ...p.poll,
-            options: updatedOptions,
-            totalVotes: p.poll.totalVotes + 1,
-            userVotedOptionId: optionId,
-          },
-        };
-      })
-    );
+    votePoll(postId, optionId);
   };
 
   // Handle Bookmark Toggle
   const handleToggleBookmark = (postId: string) => {
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, isBookmarked: !p.isBookmarked } : p))
-    );
+    toggleBookmark(postId);
   };
 
   // Handle Share
   const handleShare = (post: CommunityPost) => {
+    sharePost(post.id);
     navigator.clipboard?.writeText(window.location.href);
     setShareToast(`Link to ${post.authorName}'s post copied to clipboard!`);
     setTimeout(() => setShareToast(null), 3000);
@@ -142,24 +111,7 @@ export const CampusFeed: React.FC = () => {
   const handleAddComment = (postId: string) => {
     const text = commentInputs[postId]?.trim();
     if (!text) return;
-
-    const newComment: Comment = {
-      id: `c-${Date.now()}`,
-      authorName: 'Aryan Sharma (You)',
-      authorCollege: 'IIT Bombay',
-      authorBranch: 'Computer Science',
-      authorYear: '3rd Year / Class of 2026',
-      authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      isVerified: true,
-      content: text,
-      timestamp: 'Just now',
-      likes: 0,
-    };
-
-    setPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, comments: [...p.comments, newComment] } : p))
-    );
-
+    addComment(postId, text);
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
     setExpandedComments((prev) => ({ ...prev, [postId]: true }));
   };
@@ -186,17 +138,15 @@ export const CampusFeed: React.FC = () => {
       };
     }
 
-    const newPost: CommunityPost = {
-      id: `post-${Date.now()}`,
+    addPost({
       authorName: 'Aryan Sharma (You)',
       authorCollegeId: 'iit-bombay',
-      authorCollegeName: 'IIT Bombay',
-      authorBranch: 'Computer Science & Engineering',
+      authorCollegeName: verification.collegeName || 'IIT Bombay',
+      authorBranch: verification.degreeName || 'Computer Science & Engineering',
       authorYear: '3rd Year / Class of 2026',
       authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      authorStanding: 'Top 5% in CSE • Verified Student',
-      isVerified: true,
-      timestamp: 'Just now',
+      authorStanding: `Top ${100 - verification.collegeStandingPercentile}% in CSE • Verified`,
+      isVerified: verification.isVerified,
       content: newPostContent.trim(),
       tags: parsedTags.length > 0 ? parsedTags : ['GeneralDiscussion', 'UniSphere'],
       imageUrl: newPostImage.trim() || undefined,
@@ -207,15 +157,10 @@ export const CampusFeed: React.FC = () => {
           ? { language: codeLang, code: codeContent.trim() }
           : undefined,
       poll: createdPoll,
-      reactions: { like: 1, celebrate: 0, insightful: 0, love: 0, curious: 0 },
-      userReaction: 'like',
-      comments: [],
-      sharesCount: 0,
       isBookmarked: false,
       scope: selectedPostScope,
-    };
+    });
 
-    setPosts([newPost, ...posts]);
     setNewPostContent('');
     setNewPostImage('');
     setNewPostVideo('');

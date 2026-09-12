@@ -19,6 +19,7 @@ import {
   Rocket,
   Brain,
   Layers,
+  Building,
 } from 'lucide-react';
 import { DEMO_PROFILES } from '../data/demoProfiles';
 import { PathWiseMark } from './PathWiseMark';
@@ -28,6 +29,7 @@ export const Navbar: React.FC = () => {
 
   const campusNavItems = [
     { id: 'campus-feed', label: 'Campus Feed & Media', icon: Globe },
+    { id: 'campus-groups', label: 'College Groups & Stories', icon: Building },
     { id: 'campus-teams', label: 'Squad / Team Finder', icon: Users },
     { id: 'campus-placements', label: 'Placement Journeys', icon: Briefcase },
     { id: 'campus-compare', label: 'Compare Colleges & ROI', icon: Scale },

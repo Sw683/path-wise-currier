@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { STUDENT_PITCHES, FELLOWSHIP_PROVIDERS } from '../../data/campusData';
+import { FELLOWSHIP_PROVIDERS } from '../../data/campusData';
+import { useCampus } from '../../context/CampusContext';
 import { StudentPitch, FellowshipProvider } from '../../types/campus';
 import {
   Rocket,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const StudentFellowshipHub: React.FC = () => {
-  const [pitches, setPitches] = useState<StudentPitch[]>(STUDENT_PITCHES);
+  const { pitches, addPitch, pledgeFunding, upvotePitch, verification } = useCampus();
   const [providers, setProviders] = useState<FellowshipProvider[]>(FELLOWSHIP_PROVIDERS);
   const [activeTab, setActiveTab] = useState<'pitches' | 'providers'>('pitches');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -61,33 +62,14 @@ export const StudentFellowshipHub: React.FC = () => {
   });
 
   const handleUpvotePitch = (id: string) => {
-    setPitches((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const upvoted = !p.userUpvoted;
-        return {
-          ...p,
-          userUpvoted: upvoted,
-          upvotes: upvoted ? p.upvotes + 1 : p.upvotes - 1,
-        };
-      })
-    );
+    upvotePitch(id);
   };
 
   const handleConfirmPledge = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPitchForBacking) return;
 
-    setPitches((prev) =>
-      prev.map((p) => {
-        if (p.id !== selectedPitchForBacking.id) return p;
-        return {
-          ...p,
-          fundsRaisedINR: p.fundsRaisedINR + pledgeAmount,
-          backersCount: p.backersCount + 1,
-        };
-      })
-    );
+    pledgeFunding(selectedPitchForBacking.id, pledgeAmount, pledgeNote);
 
     setPledgeSuccess(true);
     setTimeout(() => {
@@ -113,20 +95,17 @@ export const StudentFellowshipHub: React.FC = () => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const created: StudentPitch = {
-      id: `pitch-${Date.now()}`,
+    addPitch({
       title: newTitle.trim(),
       tagline: newTagline.trim() || 'Student innovation project seeking prototype grant.',
       category: newCategory,
       founderName: 'Aryan Sharma (You)',
-      founderCollege: 'IIT Bombay',
-      founderBranch: 'Computer Science & Eng',
+      founderCollege: verification.collegeName || 'IIT Bombay',
+      founderBranch: verification.degreeName || 'Computer Science & Eng',
       founderYear: 'Class of 2026',
       founderAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       teamSize: 3,
       targetBudgetINR: newBudget,
-      fundsRaisedINR: 15000,
-      backersCount: 1,
       problemStatement: newProblem.trim(),
       solutionSummary: newSolution.trim(),
       demoVideoUrl: newVideoUrl.trim() || undefined,
@@ -134,12 +113,8 @@ export const StudentFellowshipHub: React.FC = () => {
         { title: 'MVP Design & Testing', budgetINR: Math.round(newBudget * 0.4), status: 'in_progress' },
         { title: 'Deployment & User Trials', budgetINR: Math.round(newBudget * 0.6), status: 'upcoming' },
       ],
-      grantStatus: 'Seeking Backers',
-      upvotes: 1,
-      userUpvoted: true,
-    };
+    });
 
-    setPitches([created, ...pitches]);
     setShowNewPitchModal(false);
     setNewTitle('');
     setNewTagline('');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PLACEMENT_JOURNEYS } from '../../data/campusData';
+import { useCampus } from '../../context/CampusContext';
 import { PlacementJourney, InterviewRoundDetail } from '../../types/campus';
 import {
   Briefcase,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const PlacementJourneys: React.FC = () => {
-  const [journeys, setJourneys] = useState<PlacementJourney[]>(PLACEMENT_JOURNEYS);
+  const { journeys, addJourney, upvoteJourney, verification } = useCampus();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('all');
   const [expandedJourneyId, setExpandedJourneyId] = useState<string | null>('journey-1');
@@ -56,17 +56,7 @@ export const PlacementJourneys: React.FC = () => {
   });
 
   const handleUpvote = (id: string) => {
-    setJourneys((prev) =>
-      prev.map((j) => {
-        if (j.id !== id) return j;
-        const upvoted = !j.userUpvoted;
-        return {
-          ...j,
-          userUpvoted: upvoted,
-          upvotes: upvoted ? j.upvotes + 1 : j.upvotes - 1,
-        };
-      })
-    );
+    upvoteJourney(id);
   };
 
   const handleSendAma = (e: React.FormEvent) => {
@@ -83,11 +73,10 @@ export const PlacementJourneys: React.FC = () => {
     e.preventDefault();
     if (!newCompany.trim() || !newRole.trim()) return;
 
-    const created: PlacementJourney = {
-      id: `journey-${Date.now()}`,
+    addJourney({
       studentName: 'Aryan Sharma (You)',
-      collegeName: 'IIT Bombay',
-      branch: 'Computer Science & Engineering',
+      collegeName: verification.collegeName || 'IIT Bombay',
+      branch: verification.degreeName || 'Computer Science & Engineering',
       batchYear: 'Class of 2026',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       companyName: newCompany.trim(),
@@ -118,12 +107,10 @@ export const PlacementJourneys: React.FC = () => {
         },
       ],
       keyAdvice: newAdvice.trim() || 'Stay consistent and focus on clarity of thought during interviews.',
-      upvotes: 1,
       userUpvoted: true,
       openForQuestions: true,
-    };
+    });
 
-    setJourneys([created, ...journeys]);
     setShowNewJourneyModal(false);
     setNewCompany('');
     setNewRole('');
