@@ -18,14 +18,31 @@ import { ParentDashboard } from './components/ParentDashboard';
 import { AdminConsole } from './components/AdminConsole';
 import { Footer } from './components/Footer';
 
+import { CampusFeed } from './components/campus/CampusFeed';
+import { TeamFormationHub } from './components/campus/TeamFormationHub';
+import { PlacementJourneys } from './components/campus/PlacementJourneys';
+import { UniversityPlacementCompare } from './components/campus/UniversityPlacementCompare';
+import { StudentFellowshipHub } from './components/campus/StudentFellowshipHub';
+import { BehavioralCompanyFit } from './components/campus/BehavioralCompanyFit';
+
 export const App: React.FC = () => {
   const { activeTab, role } = useApp();
+  const isOnboarding = activeTab === 'assessment';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-brand-500 selection:text-white">
-      <Navbar />
+    <div className={`${isOnboarding ? 'min-h-screen bg-slate-950' : 'min-h-screen flex flex-col bg-slate-50'} text-slate-900 font-sans selection:bg-brand-500 selection:text-white`}>
+      {!isOnboarding && <Navbar />}
 
       <main className="flex-1">
+        {/* Campus Network Routes */}
+        {activeTab === 'campus-feed' && <CampusFeed />}
+        {activeTab === 'campus-teams' && <TeamFormationHub />}
+        {activeTab === 'campus-placements' && <PlacementJourneys />}
+        {activeTab === 'campus-compare' && <UniversityPlacementCompare />}
+        {activeTab === 'campus-fellowships' && <StudentFellowshipHub />}
+        {activeTab === 'campus-profiler' && <BehavioralCompanyFit />}
+
+        {/* Existing Routes */}
         {activeTab === 'home' && <HeroSection />}
         {activeTab === 'assessment' && <OnboardingWizard />}
         {activeTab === 'dashboard' && <RoadmapDashboard />}
@@ -43,7 +60,7 @@ export const App: React.FC = () => {
         {activeTab === 'admin' && <AdminConsole />}
       </main>
 
-      <Footer />
+      {!isOnboarding && <Footer />}
     </div>
   );
 };

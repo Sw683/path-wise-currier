@@ -4,6 +4,103 @@ export type StreamChoice = 'PCM' | 'PCB' | 'PCMB' | 'Commerce' | 'Commerce_Maths
 
 export type UserRole = 'student' | 'parent' | 'mentor' | 'admin';
 
+export interface OnboardingAnswers {
+  stage?: string;
+  language?: 'English' | 'हिंदी' | 'Hinglish';
+  interests: string[];
+  workStyle?: string;
+  goals: string[];
+  clarity?: string;
+  degree?: string;
+  currentYear?: string;
+  examGoalId?: string;
+  examGoalDate?: string;
+  studyPreferences?: StudyPreferences;
+  motivationPreferences?: MotivationPreferences;
+}
+
+export type ExamGoalStatus = 'planning' | 'registered' | 'in_progress' | 'completed' | 'paused';
+export type StudySessionLength = '25_min' | '45_min' | '60_min' | '90_min';
+
+export interface StudyPreferences {
+  dailyMinutes: number;
+  planningMode: 'balanced' | 'focused' | 'light';
+  preferredSessionLength: StudySessionLength;
+  preferredTime: 'morning' | 'afternoon' | 'evening' | 'flexible';
+  studyDays: string[];
+  learningModes: ('video' | 'reading' | 'practice' | 'flashcards' | 'group_study')[];
+}
+
+export interface MotivationPreferences {
+  motivators: ('streaks' | 'small_wins' | 'encouragement' | 'competition' | 'family_checkins')[];
+  distractionTriggers: ('phone' | 'social_media' | 'noise' | 'tiredness' | 'unclear_next_step')[];
+  focusSupport: 'gentle_reminders' | 'structured_checkins' | 'quiet_mode' | 'none';
+}
+
+export interface ExamSubjectProgress {
+  id: string;
+  name: string;
+  progressPercent: number;
+  confidence: 'low' | 'building' | 'steady' | 'strong';
+  weeklyTargetHours: number;
+  isWeakArea?: boolean;
+}
+
+export interface ExamResource {
+  id: string;
+  name: string;
+  type: 'official' | 'video' | 'practice' | 'notes';
+  url: string;
+  description?: string;
+}
+
+export interface ExamGoalProfile {
+  examId: string;
+  targetDate: string;
+  status: ExamGoalStatus;
+  subjects: ExamSubjectProgress[];
+  resources: ExamResource[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MathsPracticeProgress {
+  questionsAttempted: number;
+  questionsCorrect: number;
+  weeklyGoal: number;
+  weakAreas: string[];
+  selectedTopic?: string;
+  difficulty?: 'foundation' | 'practice' | 'challenge';
+  lastPractisedAt?: string;
+}
+
+export interface StudyPlanTask {
+  id: string;
+  title: string;
+  subject: string;
+  minutes: number;
+  reason: string;
+  completed: boolean;
+}
+
+export interface StudyPlan {
+  generatedAt: string;
+  examId: string;
+  daysUntilExam: number;
+  weeklyMinutes: number;
+  tasks: StudyPlanTask[];
+}
+
+export interface StudentLikeRecommendation {
+  id: string;
+  name: string;
+  classLevel: string;
+  examLabel: string;
+  sharedStrength: string;
+  recommendation: string;
+  matchScore: number;
+}
+
 export interface AcademicRecord {
   overallPercentage: number;
   subjectMarks: {
@@ -63,6 +160,10 @@ export interface StudentProfile {
   interests: InterestProfile;
   financial: FinancialProfile;
   completedAssessment: boolean;
+  examGoal?: ExamGoalProfile;
+  studyPreferences?: StudyPreferences;
+  mathsPractice?: MathsPracticeProgress;
+  motivationPreferences?: MotivationPreferences;
 }
 
 export interface CareerPath {
@@ -134,6 +235,10 @@ export interface Exam {
   alternativeExams: string[];
   whatIfFailed: string;
   examMonth: string;
+  examDate?: string;
+  registrationDeadline?: string;
+  structuredSubjects?: ExamSubjectProgress[];
+  curatedResources?: ExamResource[];
 }
 
 export interface Scholarship {

@@ -1,608 +1,308 @@
-import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { 
-  ArrowRight, 
-  ArrowLeft, 
-  CheckCircle2, 
-  Sparkles, 
-  HelpCircle, 
-  BookOpen, 
-  Coins, 
-  Target, 
-  Brain,
-  Sliders,
-  ShieldCheck
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BriefcaseBusiness,
+  Check,
+  ChevronRight,
+  Compass,
+  FlaskConical,
+  Globe2,
+  HeartPulse,
+  Landmark,
+  Lightbulb,
+  LockKeyhole,
+  Megaphone,
+  Palette,
+  Rocket,
+  Scale,
+  Shield,
+  Sparkles,
+  Target,
+  Trophy,
+  Users,
+  Wrench,
 } from 'lucide-react';
-import { ClassLevel, StreamChoice } from '../types';
+import { useApp } from '../context/AppContext';
+import { CAREER_PATHS } from '../data/careers';
+import { ClassLevel, InterestProfile, StudentProfile } from '../types';
+import { evaluateStudentProfile } from '../utils/decisionEngine';
+import { EXAMS_DATABASE } from '../data/exams';
+import { createDefaultExamGoal } from '../utils/studyPlan';
+import { PathWiseMark } from './PathWiseMark';
+
+type Stage = '8' | '9' | '10' | '11' | '12' | 'Diploma' | 'Undergraduate' | 'Graduate' | 'Working / Other';
+type Language = 'English' | 'हिंदी' | 'Hinglish';
+
+interface Choice {
+  id: string;
+  label: string;
+  description?: string;
+  icon: React.ElementType;
+  tone: string;
+}
+
+const interestChoices: Choice[] = [
+  { id: 'technology', label: 'Technology', description: 'Apps, coding, AI, and the future', icon: Lightbulb, tone: 'cyan' },
+  { id: 'medicine', label: 'Medicine & Healthcare', description: 'Science, care, and human wellbeing', icon: HeartPulse, tone: 'rose' },
+  { id: 'business', label: 'Business & Finance', description: 'Ideas, markets, and making things grow', icon: BriefcaseBusiness, tone: 'amber' },
+  { id: 'design', label: 'Design & Creativity', description: 'Visual thinking, stories, and expression', icon: Palette, tone: 'fuchsia' },
+  { id: 'science', label: 'Science & Research', description: 'Questions, experiments, and discovery', icon: FlaskConical, tone: 'violet' },
+  { id: 'law', label: 'Law', description: 'Reasoning, justice, and advocacy', icon: Scale, tone: 'blue' },
+  { id: 'government', label: 'Government & Civil Services', description: 'Public impact and leadership', icon: Landmark, tone: 'emerald' },
+  { id: 'defence', label: 'Defence', description: 'Courage, discipline, and service', icon: Shield, tone: 'orange' },
+  { id: 'media', label: 'Media & Communication', description: 'People, messages, and culture', icon: Megaphone, tone: 'pink' },
+  { id: 'sports', label: 'Sports', description: 'Performance, movement, and teamwork', icon: Trophy, tone: 'lime' },
+  { id: 'trades', label: 'Skilled Trades', description: 'Practical making and problem solving', icon: Wrench, tone: 'slate' },
+  { id: 'unsure', label: "I’m not sure yet", description: 'That is a perfectly good place to start', icon: Compass, tone: 'indigo' },
+];
+
+const workChoices: Choice[] = [
+  { id: 'build', label: 'Build and solve', description: 'Make something work better', icon: Wrench, tone: 'cyan' },
+  { id: 'help', label: 'Help and understand people', description: 'Listen, care, and make a difference', icon: Users, tone: 'rose' },
+  { id: 'create', label: 'Imagine and create', description: 'Turn ideas into something people feel', icon: Palette, tone: 'fuchsia' },
+  { id: 'lead', label: 'Lead and make decisions', description: 'Bring people together around a goal', icon: Target, tone: 'amber' },
+  { id: 'discover', label: 'Explore and investigate', description: 'Ask why and find evidence', icon: FlaskConical, tone: 'violet' },
+  { id: 'move', label: 'Work actively and practically', description: 'Learn through action and movement', icon: Rocket, tone: 'emerald' },
+];
+
+const goalChoices = [
+  'High earning potential',
+  'Job stability',
+  'Freedom and flexibility',
+  'Creativity',
+  'Helping people',
+  'Starting a business',
+  'Working with technology',
+  'Exploring the world',
+  'I’m still figuring it out',
+];
+
+const toneClasses: Record<string, string> = {
+  cyan: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  rose: 'from-brand-400/20 to-brand-400/5 text-brand-200 border-brand-300/20',
+  amber: 'from-brand-400/20 to-brand-400/5 text-brand-200 border-brand-300/20',
+  fuchsia: 'from-brand-400/20 to-brand-400/5 text-brand-200 border-brand-300/20',
+  violet: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  blue: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  emerald: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  orange: 'from-brand-400/20 to-brand-400/5 text-brand-200 border-brand-300/20',
+  pink: 'from-brand-400/20 to-brand-400/5 text-brand-200 border-brand-300/20',
+  lime: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  slate: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+  indigo: 'from-ocean-400/20 to-ocean-400/5 text-ocean-200 border-ocean-300/20',
+};
+
+const encouragement = ['Good start.', 'We’re getting to know your strengths.', 'Your career map is taking shape.', 'Almost there.'];
+
+const stageToClass: Record<Stage, ClassLevel> = {
+  '8': '8',
+  '9': '9',
+  '10': '10',
+  '11': '11',
+  '12': '12',
+  Diploma: '12',
+  Undergraduate: '12',
+  Graduate: '12',
+  'Working / Other': '12',
+};
 
 export const OnboardingWizard: React.FC = () => {
-  const { activeProfile, updateProfile, setActiveTab } = useApp();
+  const { activeProfile, updateProfile, setOnboardingAnswers, setActiveTab } = useApp();
+  const [stage, setStage] = useState<Stage | ''>('');
+  const [language, setLanguage] = useState<Language | ''>('');
+  const [interests, setInterests] = useState<string[]>([]);
+  const [workStyle, setWorkStyle] = useState('');
+  const [goals, setGoals] = useState<string[]>([]);
+  const [clarity, setClarity] = useState('');
+  const [degree, setDegree] = useState('');
+  const [currentYear, setCurrentYear] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
 
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const totalSteps = 5;
-  const [nameError, setNameError] = useState('');
+  useEffect(() => {
+    setOnboardingAnswers({
+      stage: stage || undefined,
+      language: language || undefined,
+      interests,
+      workStyle: workStyle || undefined,
+      goals,
+      clarity: clarity || undefined,
+      degree: degree || undefined,
+      currentYear: currentYear || undefined,
+    });
+  }, [currentYear, degree, goals, interests, language, setOnboardingAnswers, stage, workStyle, clarity]);
 
-  // Step 1: Basic Info Form State
-  const [name, setName] = useState(activeProfile.name || '');
-  const [age, setAge] = useState(activeProfile.age || 15);
-  const [classLevel, setClassLevel] = useState<ClassLevel>(activeProfile.classLevel || '10');
-  const [state, setState] = useState(activeProfile.state || 'Uttar Pradesh');
-  const [cityTier, setCityTier] = useState(activeProfile.cityTier || 'Tier-2');
-  const [schoolType, setSchoolType] = useState(activeProfile.schoolType || 'CBSE');
-  const [medium, setMedium] = useState(activeProfile.mediumOfEducation || 'English');
-  const [internet, setInternet] = useState(activeProfile.internetQuality || 'mobile_4g_5g');
+  const hasAdaptiveQuestion = stage === '10' || stage === '12' || stage === 'Undergraduate';
+  const questionCount = 6 + (hasAdaptiveQuestion ? 1 : 0);
+  const currentQuestion = questionIndex;
+  const progress = Math.min(100, Math.round(((currentQuestion + 1) / questionCount) * 100));
 
-  // Step 2: Academic Diagnostic Form State
-  const [maths, setMaths] = useState(activeProfile.academics?.subjectMarks?.mathematics || 80);
-  const [science, setScience] = useState(activeProfile.academics?.subjectMarks?.science || 80);
-  const [english, setEnglish] = useState(activeProfile.academics?.subjectMarks?.english || 78);
-  const [sst, setSst] = useState(activeProfile.academics?.subjectMarks?.socialStudies || 75);
-  const [studyHours, setStudyHours] = useState(activeProfile.academics?.studyHoursPerDay || 3);
-  const [learningSpeed, setLearningSpeed] = useState(activeProfile.academics?.learningSpeed || 'fast');
+  const profile = useMemo<StudentProfile>(() => {
+    const base: InterestProfile = { analytical: 35, technical: 35, scientific: 35, social: 35, creative: 35, business: 35, physical: 35, leadership: 35 };
+    const add = (id: string, values: Partial<InterestProfile>) => {
+      if (interests.includes(id)) Object.entries(values).forEach(([key, value]) => { base[key as keyof InterestProfile] += value || 0; });
+    };
+    add('technology', { technical: 58, analytical: 42 });
+    add('medicine', { scientific: 58, social: 42 });
+    add('business', { business: 58, analytical: 36 });
+    add('design', { creative: 62, technical: 28 });
+    add('science', { scientific: 58, analytical: 42 });
+    add('law', { leadership: 42, social: 36, analytical: 38 });
+    add('government', { leadership: 52, social: 38 });
+    add('defence', { physical: 58, leadership: 42 });
+    add('media', { creative: 48, social: 48 });
+    add('sports', { physical: 62, leadership: 30 });
+    add('trades', { technical: 45, physical: 42 });
+    add('unsure', { analytical: 8, creative: 8, social: 8 });
+    if (workStyle === 'build') { base.technical += 20; base.analytical += 16; }
+    if (workStyle === 'help') { base.social += 20; base.scientific += 10; }
+    if (workStyle === 'create') base.creative += 24;
+    if (workStyle === 'lead') { base.leadership += 22; base.business += 12; }
+    if (workStyle === 'discover') { base.scientific += 18; base.analytical += 18; }
+    if (workStyle === 'move') { base.physical += 22; base.leadership += 8; }
 
-  // Step 3: Scenario Interest Answers
-  const [scenarios, setScenarios] = useState({
-    solvePuzzles: 4,      // Analytical
-    buildSoftware: 4,     // Technical
-    helpPatients: 2,      // Social
-    explainConcepts: 3,   // Teaching / Leadership
-    experimentScience: 4, // Scientific
-    organizeMoney: 3,     // Business / Commerce
-    drawAndDesign: 3,     // Creative
-    playSports: 3         // Physical
-  });
+    const normalized: InterestProfile = {
+      analytical: Math.min(98, base.analytical),
+      technical: Math.min(98, base.technical),
+      scientific: Math.min(98, base.scientific),
+      social: Math.min(98, base.social),
+      creative: Math.min(98, base.creative),
+      business: Math.min(98, base.business),
+      physical: Math.min(98, base.physical),
+      leadership: Math.min(98, base.leadership),
+    };
+    return {
+      ...activeProfile,
+      name: activeProfile.name || 'Future Pathfinder',
+      classLevel: stageToClass[stage || '10'],
+      mediumOfEducation: language === 'हिंदी' ? 'Hindi' : 'English',
+      targetCareerGoal: goals[0] || 'Explore options',
+      interests: normalized,
+      academics: { ...activeProfile.academics, learningPreferences: ['practical', 'visual'], learningSpeed: 'moderate' },
+      completedAssessment: false,
+    };
+  }, [activeProfile, goals, interests, language, stage, workStyle]);
 
-  // Step 4: Financial & Family Reality Check
-  const [incomeBracket, setIncomeBracket] = useState(activeProfile.financial?.monthlyIncomeBracket || '25k-50k');
-  const [coachingBudget, setCoachingBudget] = useState(activeProfile.financial?.coachingAffordability || 'budget_low');
-  const [relocation, setRelocation] = useState(activeProfile.financial?.relocationPossibility || 'state_level');
-  const [earningUrgency, setEarningUrgency] = useState(activeProfile.financial?.earningUrgency || 'standard_4_5yrs');
-  const [category, setCategory] = useState<string>('General');
+  const recommendations = useMemo(() => evaluateStudentProfile(profile).slice(0, 3), [profile]);
 
-  // Step 5: Aspirations
-  const [targetGoal, setTargetGoal] = useState(activeProfile.targetCareerGoal || 'Become an AI Engineer');
-
-  const validateStepOne = () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      setNameError('Student name is required before continuing.');
-      return false;
+  const answerForQuestion = (value: string) => {
+    if (currentQuestion === 0) setStage(value as Stage);
+    if (currentQuestion === 1 && hasAdaptiveQuestion) {
+      if (stage === 'Undergraduate') setDegree(value);
+      else setLanguage(value as Language);
+    } else if (currentQuestion === 1 && !hasAdaptiveQuestion) setLanguage(value as Language);
+    if ((currentQuestion === 2 && hasAdaptiveQuestion) || (currentQuestion === 1 && !hasAdaptiveQuestion)) {
+      if (hasAdaptiveQuestion && stage !== 'Undergraduate') setLanguage(value as Language);
     }
-
-    setNameError('');
-    return true;
+    const next = currentQuestion + 1;
+    if (next >= questionCount) {
+      setIsConnecting(true);
+      window.setTimeout(() => { setIsConnecting(false); setShowPreview(true); }, 1200);
+    } else {
+      setQuestionIndex(next);
+    }
   };
 
-  const handleComplete = () => {
-    if (!validateStepOne()) {
-      setCurrentStep(1);
-      return;
-    }
+  const goBack = () => setQuestionIndex((value) => Math.max(0, value - 1));
 
-    // Calculate Interest Radar
-    const computedInterests = {
-      analytical: Math.min(100, Math.round(scenarios.solvePuzzles * 18 + maths * 0.15)),
-      technical: Math.min(100, Math.round(scenarios.buildSoftware * 20)),
-      scientific: Math.min(100, Math.round(scenarios.experimentScience * 18 + science * 0.15)),
-      social: Math.min(100, Math.round(scenarios.helpPatients * 20)),
-      creative: Math.min(100, Math.round(scenarios.drawAndDesign * 20)),
-      business: Math.min(100, Math.round(scenarios.organizeMoney * 20)),
-      physical: Math.min(100, Math.round(scenarios.playSports * 20)),
-      leadership: Math.min(100, Math.round(scenarios.explainConcepts * 20))
-    };
-
-    updateProfile({
-      name,
-      age: Number(age),
-      classLevel,
-      state,
-      cityTier: cityTier as any,
-      schoolType: schoolType as any,
-      mediumOfEducation: medium as any,
-      internetQuality: internet as any,
-      targetCareerGoal: targetGoal,
-      academics: {
-        overallPercentage: Math.round((maths + science + english + sst) / 4),
-        subjectMarks: {
-          mathematics: Number(maths),
-          science: Number(science),
-          english: Number(english),
-          socialStudies: Number(sst)
-        },
-        strongestSubjects: maths > science ? ['Mathematics', 'Computer'] : ['Science', 'Mathematics'],
-        weakestSubjects: sst < english ? ['Social Studies'] : ['Language'],
-        studyHoursPerDay: Number(studyHours),
-        learningSpeed: learningSpeed as any,
-        learningPreferences: ['mathematics', 'practical', 'visual']
-      },
-      interests: computedInterests,
-      financial: {
-        monthlyIncomeBracket: incomeBracket as any,
-        coachingAffordability: coachingBudget as any,
-        relocationPossibility: relocation as any,
-        earningUrgency: earningUrgency as any,
-        eligibleCategories: [category as any]
-      },
-      completedAssessment: true
+  const finish = () => {
+    setOnboardingAnswers({
+      stage: stage || undefined,
+      language: language || undefined,
+      interests,
+      workStyle: workStyle || undefined,
+      goals,
+      clarity: clarity || undefined,
+      degree: degree || undefined,
+      currentYear: currentYear || undefined,
     });
-
+    updateProfile({ ...profile, completedAssessment: true });
+    setShowSignup(false);
     setActiveTab('dashboard');
   };
 
+  const resetToQuestions = () => {
+    setShowPreview(false);
+    setShowSignup(false);
+    setQuestionIndex(Math.max(0, questionCount - 1));
+  };
+
+  if (isConnecting) {
+    return <UniverseShell><div className="text-center"><div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-full border border-brand-300/40 bg-brand-400/10 text-brand-200 shadow-[0_0_80px_rgba(129,140,248,0.5)] motion-safe:animate-pulse"><Sparkles className="h-9 w-9" /></div><h1 className="font-['Outfit'] text-3xl font-bold text-white sm:text-4xl">We’re connecting the dots...</h1><p className="mt-3 text-sm text-slate-400">Building your career map.</p><div className="mx-auto mt-8 h-1 w-48 overflow-hidden rounded-full bg-white/10"><div className="h-full w-2/3 rounded-full bg-gradient-to-r from-brand-400 to-cyan-300 motion-safe:animate-pulse" /></div></div></UniverseShell>;
+  }
+
+  if (showSignup) {
+    return <UniverseShell><div className="mx-auto max-w-md text-center"><div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-400/15 text-brand-200 ring-1 ring-brand-300/30"><LockKeyhole className="h-7 w-7" /></div><p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-200">Your career map is ready.</p><h1 className="mt-3 font-['Outfit'] text-4xl font-extrabold tracking-tight text-white">Save your personalized path.</h1><p className="mt-4 text-sm leading-6 text-slate-400">Create an account to keep your matches, skills, and preparation timeline. You can also continue exploring without saving.</p><div className="mt-8 space-y-3"><button onClick={finish} className="w-full rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-brand-100">Create account & continue</button><button onClick={finish} className="w-full rounded-xl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10">Continue without signing up</button></div></div></UniverseShell>;
+  }
+
+  if (showPreview) {
+    return <UniverseShell><Preview recommendations={recommendations} profile={profile} onContinue={() => setShowSignup(true)} onEdit={resetToQuestions} /></UniverseShell>;
+  }
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      {/* Progress Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
-          <span>Assessment Step {currentStep} of {totalSteps}</span>
-          <span>{Math.round((currentStep / totalSteps) * 100)}% Completed</span>
+    <UniverseShell>
+      <div className="w-full max-w-3xl">
+        <div className="mb-8 flex items-center justify-between">
+          <PathWiseMark size="sm" dark />
+          <div className="flex items-center gap-3"><span className="text-xs font-medium text-slate-400">{progress}%</span><div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10 sm:w-32"><div className="h-full rounded-full bg-gradient-to-r from-brand-300 to-cyan-300 transition-all duration-500" style={{ width: `${progress}%` }} /></div></div>
         </div>
-        <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-brand-600 to-indigo-600 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-          />
+        <div key={currentQuestion} className="motion-safe:animate-[fade-in_500ms_ease-out]">
+          <QuestionPanel index={currentQuestion} hasAdaptive={hasAdaptiveQuestion} stage={stage} degree={degree} currentLanguage={language} onAnswer={answerForQuestion} interests={interests} setInterests={setInterests} workStyle={workStyle} setWorkStyle={setWorkStyle} goals={goals} setGoals={setGoals} clarity={clarity} setClarity={setClarity} setDegree={setDegree} setCurrentYear={setCurrentYear} />
         </div>
+        <div className="mt-8 flex items-center justify-between"><button onClick={goBack} disabled={currentQuestion === 0} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white disabled:invisible"><ArrowLeft className="h-4 w-4" /> Back</button><p className="text-xs text-slate-500">{encouragement[Math.min(encouragement.length - 1, Math.floor(currentQuestion / 2))]}</p><span className="w-16" /></div>
       </div>
-
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10">
-        
-        {/* Step 1: Basic & Context Profile */}
-        {currentStep === 1 && (
-          <div className="space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-bold mb-2">
-                <Brain className="w-3.5 h-3.5" /> Step 1: Basic & Geographic Context
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Tell us about yourself</h2>
-              <p className="text-xs sm:text-sm text-slate-500">Your school board and state help us map local state quota CETs and scholarships.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Student Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (e.target.value.trim()) {
-                      setNameError('');
-                    }
-                  }}
-                  placeholder="e.g. Aarav Sharma"
-                  aria-invalid={Boolean(nameError)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-                {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Current Class (Grade)</label>
-                <select
-                  value={classLevel}
-                  onChange={(e) => setClassLevel(e.target.value as ClassLevel)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="8">Class 8 (Early Exploration)</option>
-                  <option value="9">Class 9 (Foundations)</option>
-                  <option value="10">Class 10 (Stream Selection Milestone)</option>
-                  <option value="11">Class 11 (Stream Alignment)</option>
-                  <option value="12">Class 12 (Entrance & Board Year)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">State / UT (for State Quotas)</label>
-                <select
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="Uttar Pradesh">Uttar Pradesh</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Tamil Nadu">Tamil Nadu</option>
-                  <option value="West Bengal">West Bengal</option>
-                  <option value="Delhi NCR">Delhi NCR</option>
-                  <option value="Gujarat">Gujarat</option>
-                  <option value="Rajasthan">Rajasthan</option>
-                  <option value="Punjab">Punjab</option>
-                  <option value="Bihar">Bihar</option>
-                  <option value="Madhya Pradesh">Madhya Pradesh</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="Telangana">Telangana</option>
-                  <option value="Andhra Pradesh">Andhra Pradesh</option>
-                  <option value="Other State">Other Indian State/UT</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Location Area Tier</label>
-                <select
-                  value={cityTier}
-                  onChange={(e) => setCityTier(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="Tier-1">Metro / Tier-1 (Delhi, Mumbai, Bengaluru, etc.)</option>
-                  <option value="Tier-2">Tier-2 City (Kanpur, Chandigarh, Indore, etc.)</option>
-                  <option value="Tier-3">Tier-3 Town / District HQ</option>
-                  <option value="Rural">Rural / Village / Semi-urban</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">School Board</label>
-                <select
-                  value={schoolType}
-                  onChange={(e) => setSchoolType(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="CBSE">CBSE (Central Board)</option>
-                  <option value="ICSE">ICSE / ISC</option>
-                  <option value="State Board">State Board</option>
-                  <option value="Navodaya / KV">Kendriya Vidyalaya / JNV</option>
-                  <option value="Private International">Cambridge / IB</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Internet & Device Access</label>
-                <select
-                  value={internet}
-                  onChange={(e) => setInternet(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="high_broadband">High Speed WiFi Broadband + Laptop</option>
-                  <option value="mobile_4g_5g">Smartphone with 4G/5G Daily Data</option>
-                  <option value="limited_unstable">Shared Family Smartphone / Limited Data</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Academic Diagnostics */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold mb-2">
-                <BookOpen className="w-3.5 h-3.5" /> Step 2: Academic Marks & Learning Style
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Your Academic Performance</h2>
-              <p className="text-xs sm:text-sm text-slate-500">Provide approximate marks (out of 100) from recent school term examinations.</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-slate-800">Mathematics Marks</label>
-                  <span className="text-xs font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{maths}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="35"
-                  max="100"
-                  value={maths}
-                  onChange={(e) => setMaths(Number(e.target.value))}
-                  className="w-full accent-brand-600"
-                />
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-slate-800">Science / Physics / Biology</label>
-                  <span className="text-xs font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{science}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="35"
-                  max="100"
-                  value={science}
-                  onChange={(e) => setScience(Number(e.target.value))}
-                  className="w-full accent-brand-600"
-                />
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-slate-800">English Language & Literature</label>
-                  <span className="text-xs font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{english}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="35"
-                  max="100"
-                  value={english}
-                  onChange={(e) => setEnglish(Number(e.target.value))}
-                  className="w-full accent-brand-600"
-                />
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-slate-800">Social Science / Hist / Geo</label>
-                  <span className="text-xs font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{sst}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="35"
-                  max="100"
-                  value={sst}
-                  onChange={(e) => setSst(Number(e.target.value))}
-                  className="w-full accent-brand-600"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Daily Study Hours (Outside School)</label>
-                <select
-                  value={studyHours}
-                  onChange={(e) => setStudyHours(Number(e.target.value))}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="2">1?2 Hours (Light pace)</option>
-                  <option value="3.5">3?4 Hours (Moderate balanced pace)</option>
-                  <option value="5">5?6 Hours (High dedication for competitive exams)</option>
-                  <option value="7">7+ Hours (Intensive prep)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Preferred Learning Style</label>
-                <select
-                  value={learningSpeed}
-                  onChange={(e) => setLearningSpeed(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="fast">Practical, Hands-on & Fast Problem Solving</option>
-                  <option value="deep_methodical">Deep Conceptual Theory & Memorization</option>
-                  <option value="moderate">Visual & Story-based Learning</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Scenario-Based Interest Assessment */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-bold mb-2">
-                <Brain className="w-3.5 h-3.5" /> Step 3: Situational Scenario Assessment
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">What excites you in real life?</h2>
-              <p className="text-xs sm:text-sm text-slate-500">Rate each scenario from 1 (Hate it / Never) to 5 (Love it / Always excited).</p>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { key: 'solvePuzzles', label: '1. Solving tough mathematical riddles or logical puzzles even when they take 45+ minutes.' },
-                { key: 'buildSoftware', label: '2. Understanding how mobile apps, video games, robotics, and software systems are built.' },
-                { key: 'helpPatients', label: '3. Treating or caring for patients, listening to medical symptoms, or nursing sick animals.' },
-                { key: 'explainConcepts', label: '4. Debating, public speaking, leading a team, or explaining complex topics to friends.' },
-                { key: 'experimentScience', label: '5. Doing chemistry/physics experiments, observing cells under microscopes, or space discoveries.' },
-                { key: 'organizeMoney', label: '6. Managing a school event budget, understanding business profit margins, or stock investing.' },
-                { key: 'drawAndDesign', label: '7. Designing posters, visual sketching, color combinations, and creating user experiences.' },
-                { key: 'playSports', label: '8. Rigorous daily physical training, sports competitions, and outdoor athletic activities.' }
-              ].map((item) => (
-                <div key={item.key} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <span className="text-xs font-medium text-slate-800 leading-snug">{item.label}</span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {[1, 2, 3, 4, 5].map((val) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setScenarios((prev) => ({ ...prev, [item.key]: val }))}
-                        className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
-                          (scenarios as any)[item.key] === val
-                            ? 'bg-brand-600 text-white shadow-xs'
-                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {val}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Financial & Family Reality Check */}
-        {currentStep === 4 && (
-          <div className="space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2">
-                <Coins className="w-3.5 h-3.5" /> Step 4: Financial & Family Feasibility
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Financial Reality Check</h2>
-              <p className="text-xs sm:text-sm text-slate-500">
-                We never tell a student they cannot pursue a career due to wealth. Instead, we use this to surface government colleges, fee waivers, and free resources.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Monthly Household Income Bracket</label>
-                <select
-                  value={incomeBracket}
-                  onChange={(e) => setIncomeBracket(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="<25k">Under ?25,000 / month (High Scholarship Priority)</option>
-                  <option value="25k-50k">?25,000 ? ?50,000 / month</option>
-                  <option value="50k-1L">?50,000 ? ?1,00,000 / month</option>
-                  <option value="1L-2.5L">?1,00,000 ? ?2,50,000 / month</option>
-                  <option value=">2.5L">Above ?2,50,000 / month</option>
-                  <option value="prefer_not_to_say">Prefer not to disclose</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Coaching Affordability Preference</label>
-                <select
-                  value={coachingBudget}
-                  onChange={(e) => setCoachingBudget(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="none">Zero Budget / Free YouTube & Books only</option>
-                  <option value="budget_low">Low Budget (Online affordable courses under ?10k/yr)</option>
-                  <option value="moderate">Moderate Budget (?20k??60k/yr)</option>
-                  <option value="high">High Budget (Kota / Offline Institutes ?1L??2L/yr)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">College Relocation & Hostel Feasibility</label>
-                <select
-                  value={relocation}
-                  onChange={(e) => setRelocation(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="local_only">Must stay in local district / commute from home</option>
-                  <option value="state_level">Can relocate anywhere within State</option>
-                  <option value="pan_india_anywhere">Can relocate Pan-India anywhere</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Earning Urgency Horizon</label>
-                <select
-                  value={earningUrgency}
-                  onChange={(e) => setEarningUrgency(e.target.value as any)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="immediate_after_school">Need to start earning by age 18-19 (Diploma/Skill)</option>
-                  <option value="early_degree_3yrs">Start earning by 21 (3-Year Graduation / BCA / B.Com)</option>
-                  <option value="standard_4_5yrs">Standard 4-Year B.Tech / Professional Degree</option>
-                  <option value="long_term_can_wait">Can wait 6-8 years (MBBS MD / Ph.D. / UPSC)</option>
-                </select>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Voluntary Category for Scholarship Matching</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none bg-white"
-                >
-                  <option value="General">General / Open Category</option>
-                  <option value="EWS">Economically Weaker Section (EWS)</option>
-                  <option value="OBC_NCL">Other Backward Class (OBC - Non Creamy Layer)</option>
-                  <option value="SC">Scheduled Caste (SC)</option>
-                  <option value="ST">Scheduled Tribe (ST)</option>
-                  <option value="Single_Girl_Child">Single Girl Child Quota Eligible</option>
-                  <option value="Defense_Ward">Ward of Armed Forces Personnel</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 5: Aspirations & Personal Goals */}
-        {currentStep === 5 && (
-          <div className="space-y-6">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold mb-2">
-                <Target className="w-3.5 h-3.5" /> Step 5: Aspirations & Dream Goals
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 font-['Outfit']">Your Dream Career Direction</h2>
-              <p className="text-xs sm:text-sm text-slate-500">What is the field or dream you currently feel most drawn towards?</p>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-2">Select or Type Your Dream Goal</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
-                {[
-                  'Become an AI Engineer',
-                  'Medical Doctor (MBBS)',
-                  'Chartered Accountant (CA)',
-                  'Corporate Lawyer / Judge',
-                  'Defence Officer via NDA',
-                  'Pure Science Researcher (IISER/ISRO)',
-                  'Civil Services Officer (IAS/IPS)',
-                  'Professional Athlete / Sports Coach',
-                  'UI/UX & Product Designer',
-                  'Commercial Airline Pilot'
-                ].map((goal) => (
-                  <button
-                    key={goal}
-                    type="button"
-                    onClick={() => setTargetGoal(goal)}
-                    className={`p-3 rounded-xl text-xs font-semibold text-left border transition ${
-                      targetGoal === goal
-                        ? 'bg-brand-50 border-brand-500 text-brand-800 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {goal}
-                  </button>
-                ))}
-              </div>
-
-              <input
-                type="text"
-                value={targetGoal}
-                onChange={(e) => setTargetGoal(e.target.value)}
-                placeholder="Or type custom career goal..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="p-4 rounded-2xl bg-brand-50/70 border border-brand-200 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
-              <div className="text-xs text-brand-900">
-                <p className="font-bold">AI Decision Engine Ready</p>
-                <p className="text-brand-700 mt-0.5">
-                  Clicking "Generate My Roadmap" will compute your 8-dimensional interest vector, evaluate entrance exam competition, and synthesize your 4-tier strategy (High Probability, Ambitious, Backup, Low-Cost).
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Wizard Footer Nav Buttons */}
-        <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between">
-          {currentStep > 1 ? (
-            <button
-              type="button"
-              onClick={() => setCurrentStep((prev) => prev - 1)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-          ) : <div />}
-
-          {currentStep < totalSteps ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (currentStep === 1 && !validateStepOne()) {
-                  return;
-                }
-
-                setCurrentStep((prev) => prev + 1);
-              }}
-              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition hover:scale-[1.02]"
-            >
-              Continue <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleComplete}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition hover:scale-[1.02]"
-            >
-              <Sparkles className="w-4 h-4" /> Generate My Personalized Roadmap
-            </button>
-          )}
-        </div>
-
-      </div>
-    </div>
+    </UniverseShell>
   );
+};
+
+const QuestionPanel: React.FC<{
+  index: number; hasAdaptive: boolean; stage: Stage | ''; degree: string; currentLanguage: Language | '';
+  onAnswer: (value: string) => void; interests: string[]; setInterests: React.Dispatch<React.SetStateAction<string[]>>;
+  workStyle: string; setWorkStyle: (value: string) => void; goals: string[]; setGoals: React.Dispatch<React.SetStateAction<string[]>>;
+  clarity: string; setClarity: (value: string) => void; setDegree: (value: string) => void; setCurrentYear: (value: string) => void;
+}> = ({ index, hasAdaptive, stage, onAnswer, interests, setInterests, workStyle, setWorkStyle, goals, setGoals, clarity, setClarity, setDegree, setCurrentYear }) => {
+  const offset = hasAdaptive ? 1 : 0;
+  if (index === 0) return <Question heading="What class or stage are you currently in?" subheading="Every journey starts from a different place." options={['8', '9', '10', '11', '12', 'Diploma', 'Undergraduate', 'Graduate', 'Working / Other'].map((value) => ({ id: value, label: value.startsWith('Class') || ['Diploma', 'Undergraduate', 'Graduate'].includes(value) ? value : `Class ${value}`, icon: Globe2, tone: 'indigo' }))} onAnswer={onAnswer} />;
+  if (hasAdaptive && index === 1) {
+    if (stage === 'Undergraduate') return <Question heading="What are you studying right now?" subheading="We’ll keep the next suggestions relevant to your current direction." options={['Engineering / Technology', 'Medicine / Life Sciences', 'Business / Commerce', 'Arts / Design', 'Law / Public Policy', 'Other or exploring'].map((value) => ({ id: value, label: value, icon: BookIcon, tone: 'cyan' }))} onAnswer={(value) => { setDegree(value); onAnswer(value); }} />;
+    return <Question heading={stage === '12' ? 'What would help you most after Class 12?' : 'What feels most important as you plan Class 11–12?'} subheading="This lets us adapt the journey to your next milestone." options={(stage === '12' ? ['Choose a degree or course', 'Understand entrance exams', 'Explore skills and careers', 'Find practical alternatives'] : ['Compare streams', 'Understand subjects and careers', 'Build a strong foundation', 'I’m still exploring']).map((value) => ({ id: value, label: value, icon: Target, tone: 'violet' }))} onAnswer={onAnswer} />;
+  }
+  if (index === 1 + offset) return <Question heading="Which language feels most comfortable for you?" subheading="Choose what makes this experience feel natural." options={['English', 'हिंदी', 'Hinglish'].map((value) => ({ id: value, label: value, icon: Globe2, tone: 'blue' }))} onAnswer={onAnswer} />;
+  if (index === 2 + offset) return <Question heading="What sparks your curiosity?" subheading="Pick up to three paths worth exploring." options={interestChoices} multi selected={interests} setSelected={setInterests} onAnswer={() => onAnswer('interests')} />;
+  if (index === 3 + offset) return <Question heading="What kind of work sounds exciting to you?" subheading="Imagine an ordinary day in a future you would enjoy." options={workChoices} selectedId={workStyle} onAnswer={(value) => { setWorkStyle(value); onAnswer(value); }} />;
+  if (index === 4 + offset) return <Question heading="What do you want your future to give you?" subheading="Choose the values that matter most. You can select more than one." options={goalChoices.map((value) => ({ id: value, label: value, icon: Target, tone: 'indigo' }))} multi selected={goals} setSelected={setGoals} onAnswer={() => onAnswer('goals')} />;
+  return <Question heading="How clear are you about your career right now?" subheading="Clarity is not a test. It is simply your starting point." options={['I know exactly what I want', 'I have a few ideas', 'I’m confused', 'I have no idea yet'].map((value) => ({ id: value, label: value, icon: Compass, tone: 'fuchsia' }))} selectedId={clarity} onAnswer={(value) => { setClarity(value); onAnswer(value); }} />;
+};
+
+const Question: React.FC<{ heading: string; subheading: string; options: Choice[]; onAnswer: (value: string) => void; multi?: boolean; selected?: string[]; setSelected?: React.Dispatch<React.SetStateAction<string[]>>; selectedId?: string }> = ({ heading, subheading, options, onAnswer, multi, selected = [], setSelected, selectedId }) => {
+  const [localSelection, setLocalSelection] = useState<string[]>(selected);
+  const choose = (id: string) => {
+    if (!multi) { onAnswer(id); return; }
+    const next = localSelection.includes(id) ? localSelection.filter((item) => item !== id) : [...localSelection, id];
+    setLocalSelection(next);
+    setSelected?.(next);
+  };
+  return <div><div className="mb-8 text-center"><p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-brand-200">Question</p><h1 className="font-['Outfit'] text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">{heading}</h1><p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-slate-400">{subheading}</p></div><div className="grid gap-3 sm:grid-cols-2">{options.map((option) => { const Icon = option.icon; const selectedState = multi ? localSelection.includes(option.id) : selectedId === option.id; return <button key={option.id} onClick={() => choose(option.id)} className={`group relative flex min-h-[82px] items-center gap-4 rounded-2xl border bg-gradient-to-br p-4 text-left transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 ${toneClasses[option.tone] || toneClasses.indigo} ${selectedState ? 'ring-2 ring-white/70' : ''}`}><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10"><Icon className="h-5 w-5" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-white">{option.label}</span>{option.description && <span className="mt-1 block text-xs leading-5 text-slate-400">{option.description}</span>}</span>{selectedState && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-950"><Check className="h-3 w-3" /></span>}</button>; })}</div>{multi && <button disabled={!localSelection.length} onClick={() => onAnswer('selected')} className="mx-auto mt-6 flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-40">Continue <ArrowRight className="h-4 w-4" /></button>}</div>;
+};
+
+const Preview: React.FC<{ recommendations: ReturnType<typeof evaluateStudentProfile>; profile: StudentProfile; onContinue: () => void; onEdit: () => void }> = ({ recommendations, profile, onContinue, onEdit }) => (
+  <div className="w-full max-w-4xl"><div className="mb-8 text-center"><div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-400/15 text-brand-200 shadow-[0_0_50px_rgba(129,140,248,0.25)]"><Sparkles className="h-8 w-8" /></div><p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-200">Your first map</p><h1 className="mt-3 font-['Outfit'] text-3xl font-extrabold text-white sm:text-5xl">Paths worth exploring.</h1><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400">These are potential matches based on your answers—not guaranteed predictions. Your interests and plans can grow from here.</p></div><div className="grid gap-4 md:grid-cols-3">{recommendations.map((item, index) => <div key={item.careerId} className={`rounded-2xl border p-5 ${index === 0 ? 'border-brand-300/50 bg-brand-400/10' : 'border-white/10 bg-white/5'}`}><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{index === 0 ? 'Potential match' : 'Worth exploring'}</span><span className="text-sm font-bold text-brand-200">{item.compatibilityScore}% fit</span></div><h2 className="mt-4 text-base font-bold text-white">{item.careerTitle}</h2><p className="mt-2 text-xs leading-5 text-slate-400">{item.whyThisRecommendation[0]}</p></div>)}</div><div className="mt-5 grid gap-4 md:grid-cols-2"><InfoCard icon={<Lightbulb className="h-5 w-5" />} title="Skills to explore" body={recommendations[0]?.strengthsAlignment.slice(0, 2).join(' • ') || 'Curiosity • Communication • Problem solving'} /><InfoCard icon={<Rocket className="h-5 w-5" />} title="A simple timeline" body={`Now: explore and build small projects • Class ${profile.classLevel}: strengthen foundations • Next: compare courses and pathways`} /></div><OptionalExamGoal /><div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"><button onClick={onContinue} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-brand-100 sm:w-auto">Save my career map <ArrowRight className="h-4 w-4" /></button><button onClick={onEdit} className="rounded-xl px-5 py-3.5 text-sm font-semibold text-slate-400 transition hover:bg-white/5 hover:text-white">Review answers</button></div></div>
+);
+
+const OptionalExamGoal: React.FC = () => {
+  const { examGoalProfile, setExamGoalProfile } = useApp();
+  const selectedExam = examGoalProfile?.examId || '';
+  return <div className="mt-5 rounded-2xl border border-brand-300/20 bg-brand-400/10 p-4 text-left"><div className="flex items-center gap-2 text-sm font-bold text-white"><Target className="h-4 w-4 text-brand-200" /> Optional: add an exam goal</div><p className="mt-1 text-xs leading-5 text-slate-400">Set a target now for a live countdown and personalised study plan. You can skip this and add it later from your dashboard.</p><div className="mt-3 grid gap-2 sm:grid-cols-[1fr_180px]"><select value={selectedExam} onChange={(event) => setExamGoalProfile(event.target.value ? createDefaultExamGoal(event.target.value) : undefined)} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-xs text-white outline-none focus:ring-2 focus:ring-brand-400"><option value="">No exam goal yet</option>{EXAMS_DATABASE.map((exam) => <option key={exam.id} value={exam.id}>{exam.name}</option>)}</select>{examGoalProfile && <input type="date" value={examGoalProfile.targetDate} onChange={(event) => setExamGoalProfile({ ...examGoalProfile, targetDate: event.target.value, updatedAt: new Date().toISOString() })} className="rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2.5 text-xs text-white outline-none focus:ring-2 focus:ring-brand-400" />}</div></div>;
+
+};
+
+const InfoCard: React.FC<{ icon: React.ReactNode; title: string; body: string }> = ({ icon, title, body }) => <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-400/10 text-brand-200">{icon}</span><div><h3 className="text-sm font-bold text-white">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-400">{body}</p></div></div>;
+const BookIcon = () => <BriefcaseBusiness className="h-5 w-5" />;
+
+const UniverseShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const stars = Array.from({ length: 36 }, (_, index) => ({ left: `${(index * 37) % 100}%`, top: `${(index * 61) % 100}%`, delay: `${(index % 7) * 0.4}s` }));
+  return <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050816] px-4 py-8 text-white sm:px-6"><div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_10%,rgba(79,70,229,0.28),transparent_38%),radial-gradient(ellipse_at_85%_80%,rgba(6,182,212,0.16),transparent_35%),radial-gradient(ellipse_at_55%_45%,rgba(124,58,237,0.10),transparent_50%)]" /><div className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-indigo-600/10 blur-3xl motion-safe:animate-pulse" /><div className="pointer-events-none absolute -right-40 bottom-0 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-3xl motion-safe:animate-pulse" />{stars.map((star, index) => <span key={index} className="absolute h-0.5 w-0.5 rounded-full bg-white/70 motion-safe:animate-pulse" style={{ left: star.left, top: star.top, animationDelay: star.delay }} />)}<div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] [background-size:80px_80px]" />{children}</section>;
 };

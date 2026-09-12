@@ -22,6 +22,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { CAREER_PATHS } from '../data/careers';
+import { ExamPreparationPanel } from './ExamPreparationPanel';
 
 export const RoadmapDashboard: React.FC = () => {
   const { activeProfile, recommendations, setActiveTab } = useApp();
@@ -53,7 +54,7 @@ export const RoadmapDashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Top Banner: Student Snapshot */}
-      <div className="bg-gradient-to-r from-slate-900 via-brand-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-slate-950 via-ocean-950 to-slate-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-semibold border border-brand-500/30">
             <Sparkles className="w-3.5 h-3.5" /> Personalized AI Career Decision Matrix
@@ -82,6 +83,8 @@ export const RoadmapDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <ExamPreparationPanel />
 
       {/* 4-Tier Strategy Framework Header */}
       <div className="space-y-3">
@@ -288,13 +291,13 @@ export const RoadmapDashboard: React.FC = () => {
           {topRec && (
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
               <h3 className="font-bold text-slate-900 text-sm font-['Outfit'] mb-3 flex items-center gap-2">
-                <Target className="w-4 h-4 text-indigo-600" /> Next 6 Months Strategic Goals
+                <Target className="w-4 h-4 text-ocean-600" /> Next 6 Months Strategic Goals
               </h3>
 
               <div className="space-y-2.5">
                 {topRec.next6MonthsMilestones.map((m, idx) => (
-                  <div key={idx} className="p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 text-xs text-indigo-950 flex items-start gap-2">
-                    <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  <div key={idx} className="p-3 rounded-xl bg-ocean-50/50 border border-ocean-100 text-xs text-ocean-950 flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-ocean-200 text-ocean-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                       {idx + 1}
                     </span>
                     <span className="leading-snug">{m}</span>
@@ -305,7 +308,7 @@ export const RoadmapDashboard: React.FC = () => {
           )}
 
           {/* Mentor Fast Connect */}
-          <div className="p-5 rounded-3xl bg-gradient-to-tr from-brand-600 to-indigo-700 text-white shadow-md">
+          <div className="p-5 rounded-3xl bg-gradient-to-tr from-brand-600 to-ocean-700 text-white shadow-md">
             <h4 className="font-bold text-sm font-['Outfit'] mb-1">Talk to an AI Engineer / Mentor</h4>
             <p className="text-xs text-brand-100 mb-3 leading-normal">
               Book a verified 30-min consultation (?99??199 / Free for EWS) with guardian consent.

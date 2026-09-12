@@ -1,7 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { StudentProfile, UserRole, RecommendationResult, Booking } from '../types';
+import {
+  StudentProfile,
+  UserRole,
+  RecommendationResult,
+  Booking,
+  OnboardingAnswers,
+  ExamGoalProfile,
+  MathsPracticeProgress,
+  MotivationPreferences,
+  StudyPlan,
+  StudyPreferences,
+} from '../types';
 import { DEMO_PROFILES } from '../data/demoProfiles';
 import { evaluateStudentProfile } from '../utils/decisionEngine';
+import { DEFAULT_MOTIVATION_PREFERENCES, DEFAULT_STUDY_PREFERENCES, generateStudyPlan } from '../utils/studyPlan';
 
 const STORAGE_KEY = 'pathwise-india-state-v1';
 
@@ -15,6 +27,18 @@ interface AppContextType {
   setActiveTab: (tab: string) => void;
   loadDemoProfile: (profileId: string) => void;
   updateProfile: (updates: Partial<StudentProfile>) => void;
+  examGoalProfile?: ExamGoalProfile;
+  setExamGoalProfile: (goal?: ExamGoalProfile) => void;
+  studyPreferences: StudyPreferences;
+  setStudyPreferences: (preferences: StudyPreferences) => void;
+  mathsPractice: MathsPracticeProgress;
+  setMathsPractice: (progress: MathsPracticeProgress) => void;
+  motivationPreferences: MotivationPreferences;
+  setMotivationPreferences: (preferences: MotivationPreferences) => void;
+  studyPlan?: StudyPlan;
+  generatePlan: () => void;
+  onboardingAnswers: OnboardingAnswers;
+  setOnboardingAnswers: (answers: OnboardingAnswers) => void;
   bookings: Booking[];
   createBooking: (booking: Omit<Booking, 'id' | 'meetingLink'> & { id?: string }) => void;
   guardianShieldActive: boolean;
@@ -71,12 +95,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [role, setRole] = useState<UserRole>(() => storedState?.role ?? 'student');
   const [activeProfile, setActiveProfile] = useState<StudentProfile>(() => storedState?.activeProfile ?? DEMO_PROFILES[0]);
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
-  const [activeTab, setActiveTab] = useState<string>(() => storedState?.activeTab ?? 'home');
+  const [activeTab, setActiveTab] = useState<string>(() => storedState?.activeTab ?? 'campus-feed');
   const [guardianShieldActive, setGuardianShieldActive] = useState<boolean>(() => storedState?.guardianShieldActive ?? true);
   const [scenarioBudgetMultiplier, setScenarioBudgetMultiplier] = useState<number>(() => storedState?.scenarioBudgetMultiplier ?? 1);
   const [scenarioScoreOffset, setScenarioScoreOffset] = useState<number>(() => storedState?.scenarioScoreOffset ?? 0);
 
   const [bookings, setBookings] = useState<Booking[]>(() => storedState?.bookings ?? defaultBookings);
+  const [onboardingAnswers, setOnboardingAnswers] = useState<OnboardingAnswers>(() => storedState?.onboardingAnswers ?? {
+    interests: [],
+    goals: []
+  });
+  const [examGoalProfile, setExamGoalProfileState] = useState<ExamGoalProfile | undefined>(() => (
+    storedState?.examGoalProfile ?? storedState?.activeProfile?.examGoal
+  ));
+  const [studyPreferences, setStudyPreferencesState] = useState<StudyPreferences>(() => (
+    storedState?.studyPreferences ?? storedState?.activeProfile?.studyPreferences ?? DEFAULT_STUDY_PREFERENCES
+  ));
+  const [mathsPractice, setMathsPracticeState] = useState<MathsPracticeProgress>(() => (
+    storedState?.mathsPractice ?? storedState?.activeProfile?.mathsPractice ?? {
+      questionsAttempted: 0,
+      questionsCorrect: 0,
+      weeklyGoal: 30,
+      weakAreas: [],
+      difficulty: 'practice',
+    }
+  ));
+  const [motivationPreferences, setMotivationPreferencesState] = useState<MotivationPreferences>(() => (
+    storedState?.motivationPreferences ?? storedState?.activeProfile?.motivationPreferences ?? DEFAULT_MOTIVATION_PREFERENCES
+  ));
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | undefined>(() => storedState?.studyPlan);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -89,11 +136,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           guardianShieldActive,
           scenarioBudgetMultiplier,
           scenarioScoreOffset,
-          bookings
+          bookings,
+          onboardingAnswers,
+          examGoalProfile,
+          studyPreferences,
+          mathsPractice,
+          motivationPreferences,
+          studyPlan
         })
       );
     }
-  }, [role, activeProfile, activeTab, guardianShieldActive, scenarioBudgetMultiplier, scenarioScoreOffset, bookings]);
+  }, [role, activeProfile, activeTab, guardianShieldActive, scenarioBudgetMultiplier, scenarioScoreOffset, bookings, onboardingAnswers, examGoalProfile, studyPreferences, mathsPractice, motivationPreferences, studyPlan]);
 
   // Recalculate recommendations whenever profile or scenario changes
   useEffect(() => {
@@ -107,6 +160,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const found = DEMO_PROFILES.find((p) => p.id === profileId);
     if (found) {
       setActiveProfile(found);
+      setExamGoalProfileState(found.examGoal);
+      setStudyPreferencesState(found.studyPreferences ?? DEFAULT_STUDY_PREFERENCES);
+      setMathsPracticeState(found.mathsPractice ?? { questionsAttempted: 0, questionsCorrect: 0, weeklyGoal: 30, weakAreas: [] });
+      setMotivationPreferencesState(found.motivationPreferences ?? DEFAULT_MOTIVATION_PREFERENCES);
+      setStudyPlan(undefined);
       setActiveTab('dashboard');
     }
   };
@@ -117,8 +175,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...updates,
       academics: { ...prev.academics, ...(updates.academics || {}) },
       interests: { ...prev.interests, ...(updates.interests || {}) },
-      financial: { ...prev.financial, ...(updates.financial || {}) }
+      financial: { ...prev.financial, ...(updates.financial || {}) },
+      examGoal: updates.examGoal ?? prev.examGoal,
+      studyPreferences: updates.studyPreferences ?? prev.studyPreferences,
+      mathsPractice: updates.mathsPractice ?? prev.mathsPractice,
+      motivationPreferences: updates.motivationPreferences ?? prev.motivationPreferences,
     }));
+  };
+
+  const setExamGoalProfile = (goal?: ExamGoalProfile) => {
+    setExamGoalProfileState(goal);
+    if (goal) {
+      updateProfile({ examGoal: goal });
+    } else {
+      setActiveProfile((prev) => {
+        const next = { ...prev };
+        delete next.examGoal;
+        return next;
+      });
+    }
+  };
+
+  const setStudyPreferences = (preferences: StudyPreferences) => {
+    setStudyPreferencesState(preferences);
+    updateProfile({ studyPreferences: preferences });
+  };
+
+  const setMathsPractice = (progress: MathsPracticeProgress) => {
+    setMathsPracticeState(progress);
+    updateProfile({ mathsPractice: progress });
+  };
+
+  const setMotivationPreferences = (preferences: MotivationPreferences) => {
+    setMotivationPreferencesState(preferences);
+    updateProfile({ motivationPreferences: preferences });
+  };
+
+  const generatePlan = () => {
+    if (examGoalProfile) {
+      setStudyPlan(generateStudyPlan(activeProfile, examGoalProfile, studyPreferences, mathsPractice));
+    }
   };
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'meetingLink'> & { id?: string }) => {
@@ -142,6 +238,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveTab,
         loadDemoProfile,
         updateProfile,
+        examGoalProfile,
+        setExamGoalProfile,
+        studyPreferences,
+        setStudyPreferences,
+        mathsPractice,
+        setMathsPractice,
+        motivationPreferences,
+        setMotivationPreferences,
+        studyPlan,
+        generatePlan,
+        onboardingAnswers,
+        setOnboardingAnswers,
         bookings,
         createBooking,
         guardianShieldActive,

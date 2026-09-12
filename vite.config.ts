@@ -10,7 +10,10 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     cors: true,
-    open: false
+    open: false,
+    proxy: {
+      '/api': 'http://localhost:8787'
+    }
   },
   preview: {
     host: '0.0.0.0',

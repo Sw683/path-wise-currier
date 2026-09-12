@@ -15,6 +15,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { CAREER_PATHS } from '../data/careers';
+import { GeminiWhatIfResponse, geminiApi } from '../services/geminiApi';
 
 export const PathSimulator: React.FC = () => {
   const { activeProfile } = useApp();
@@ -24,8 +25,29 @@ export const PathSimulator: React.FC = () => {
   const [coachingScenario, setCoachingScenario] = useState<'self_study' | 'budget' | 'intensive'>('self_study');
   const [budgetScenario, setBudgetScenario] = useState<'low' | 'moderate' | 'high'>('low');
   const [locationScenario, setLocationScenario] = useState<'local' | 'metro'>('local');
+  const [aiScenario, setAiScenario] = useState<GeminiWhatIfResponse | null>(null);
+  const [isLoadingAiScenario, setIsLoadingAiScenario] = useState(false);
+  const [aiScenarioError, setAiScenarioError] = useState<string | null>(null);
 
   const career = CAREER_PATHS.find((c) => c.id === selectedCareerId) || CAREER_PATHS[0];
+
+  const exploreWithAi = async () => {
+    setIsLoadingAiScenario(true);
+    setAiScenarioError(null);
+    try {
+      const response = await geminiApi.whatIf({
+        profile: activeProfile,
+        scenario: `${simulatePlanAFail ? 'The primary exam path is not cleared' : 'The primary exam path remains active'}; coaching=${coachingScenario}; budget=${budgetScenario}; location=${locationScenario}`,
+        targetCareer: career.title,
+        context: { selectedCareerId }
+      });
+      setAiScenario(response);
+    } catch (error) {
+      setAiScenarioError(error instanceof Error ? error.message : 'AI comparison is unavailable right now.');
+    } finally {
+      setIsLoadingAiScenario(false);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -127,6 +149,34 @@ export const PathSimulator: React.FC = () => {
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="bg-gradient-to-br from-ocean-950 via-slate-900 to-brand-950 rounded-3xl border border-ocean-800 p-6 sm:p-8 text-white shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-brand-300">Personalized AI comparison</p>
+            <h2 className="text-xl font-bold font-['Outfit'] mt-1">What could this choice look like for you?</h2>
+            <p className="text-sm text-slate-300 mt-1">Gemini uses your profile and the simulation settings to compare this scenario. It is guidance, not a prediction.</p>
+          </div>
+          <button type="button" onClick={() => void exploreWithAi()} disabled={isLoadingAiScenario} className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 hover:bg-brand-400 px-4 py-2.5 text-sm font-bold transition disabled:opacity-60">
+            <Sparkles className="w-4 h-4" /> {isLoadingAiScenario ? 'Exploring...' : 'Explore with AI'}
+          </button>
+        </div>
+        {aiScenarioError && <p className="mt-4 text-sm text-amber-200" role="status">{aiScenarioError} The local simulator remains available below.</p>}
+        {aiScenario && (
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-white/10 p-4">
+              <h3 className="font-bold">{aiScenario.scenario}</h3>
+              <p className="text-sm text-slate-200 mt-2">{aiScenario.outlook}</p>
+            </div>
+            <div className="rounded-2xl bg-white/10 p-4 text-sm space-y-3">
+              <div><strong className="text-brand-200">Advantages:</strong> {aiScenario.advantages.join(' • ')}</div>
+              <div><strong className="text-brand-200">Consider:</strong> {aiScenario.considerations.join(' • ')}</div>
+              <div><strong className="text-brand-200">Next steps:</strong> {aiScenario.nextSteps.join(' • ')}</div>
+              <div><strong className="text-brand-200">Alternatives:</strong> {aiScenario.alternatives.join(' • ')}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Simulation Tree */}

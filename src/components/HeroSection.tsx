@@ -16,6 +16,8 @@ import {
   Zap
 } from 'lucide-react';
 import { DEMO_PROFILES } from '../data/demoProfiles';
+import { PathWiseMark } from './PathWiseMark';
+import { CareerPathVisual } from './CareerPathVisual';
 
 export const HeroSection: React.FC = () => {
   const { setActiveTab, loadDemoProfile } = useApp();
@@ -27,87 +29,88 @@ export const HeroSection: React.FC = () => {
   const [miniBudget, setMiniBudget] = useState<string>('');
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-brand-50/60 via-slate-50 to-white">
+    <div className="relative overflow-hidden bg-[#070b18] text-white">
       {/* Background Glows */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-20 -right-40 w-96 h-96 bg-indigo-200/40 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none motion-safe:animate-pulse" />
+      <div className="absolute top-20 -right-40 h-96 w-96 rounded-full bg-violet-500/15 blur-3xl pointer-events-none motion-safe:animate-pulse" />
+      <div className="absolute inset-0 opacity-30 pointer-events-none [background-image:linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.06)_1px,transparent_1px)] [background-size:72px_72px]" />
 
       {/* Main Hero Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 lg:pt-16 lg:pb-24 relative">
-        
-        {/* Top Tag */}
-        <div className="flex items-center justify-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-100 text-brand-800 text-xs font-semibold border border-brand-200 shadow-xs mb-6 animate-pulse-subtle">
-            <Sparkles className="w-3.5 h-3.5 text-brand-600" />
-            Empowering 25 Crore Indian Students Across Class 8?12
-          </div>
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14 lg:px-8 lg:pb-24 lg:pt-20">
+        <div className="mb-10 flex items-center justify-center lg:mb-16">
+          <PathWiseMark size="lg" dark />
         </div>
 
-        {/* Headline */}
-        <div className="text-center max-w-4xl mx-auto space-y-4">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 font-['Outfit'] leading-[1.15]">
-            Don?t choose your career blindly. <br className="hidden sm:inline" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-800">
-              Build your personalized path.
-            </span>
-          </h1>
-
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Tell us where you are, what you enjoy, what you?re good at, and what opportunities you have. We?ll help you explore realistic paths?and the alternatives if Plan A doesn?t work.
-          </p>
+        <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
+          <div className="text-center lg:text-left">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-300/20 bg-brand-400/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-brand-200">
+              <Sparkles className="h-3.5 w-3.5 text-brand-300" />
+              Explore what could fit you
+            </div>
+            <h1 className="font-['Outfit'] text-4xl font-extrabold leading-[1.05] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+              Discover where your <span className="bg-gradient-to-r from-brand-300 via-brand-400 to-ocean-300 bg-clip-text text-transparent">potential</span> can take you.
+            </h1>
+            <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8 lg:mx-0">
+              Start with your curiosity. PathWise helps you explore meaningful directions and the many ways forward.
+            </p>
 
           {/* 3 Main CTAs */}
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:justify-start">
             <button
               onClick={() => setActiveTab('assessment')}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-600/25 transition-all hover:-translate-y-0.5 hover:from-brand-400 hover:to-brand-600 hover:shadow-xl hover:shadow-brand-600/30 active:translate-y-0 sm:min-w-52"
             >
-              Build My Career Path
-              <ArrowRight className="w-4 h-4" />
+              Discover My Path
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </button>
 
             <button
               onClick={() => setActiveTab('exams')}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm border border-slate-300 shadow-xs transition hover:border-slate-400"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-md sm:min-w-52"
             >
-              <BookOpen className="w-4 h-4 text-brand-600" />
-              Explore Careers & Exams
+              <BookOpen className="h-4 w-4 text-brand-300" />
+              Explore Careers
             </button>
 
             <button
               onClick={() => setActiveTab('mentors')}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm border border-slate-300 shadow-xs transition hover:border-slate-400"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-semibold text-slate-100 shadow-sm transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-md sm:min-w-52"
             >
-              <Users className="w-4 h-4 text-indigo-600" />
+              <Users className="h-4 w-4 text-ocean-300" />
               Talk to a Professional
             </button>
           </div>
 
           {/* Demo Student Fast Track Box */}
-          <div className="pt-6">
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 p-2 rounded-2xl bg-white border border-slate-200 shadow-sm text-xs text-slate-600">
-              <span className="font-semibold text-slate-900 flex items-center gap-1 pl-2">
-                <Zap className="w-3.5 h-3.5 text-amber-500" /> Try Section 29 Demo:
+          <div className="mt-7">
+            <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2.5 text-xs text-slate-300 shadow-sm backdrop-blur">
+              <span className="flex items-center gap-1 px-2 font-semibold text-white">
+                <Zap className="h-3.5 w-3.5 text-amber-500" /> Try a demo profile
               </span>
               <button
                 onClick={() => loadDemoProfile('demo-aarav-class10')}
-                className="px-2.5 py-1 bg-brand-50 hover:bg-brand-100 text-brand-700 font-medium rounded-lg border border-brand-200 transition"
+                className="rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1.5 font-medium text-brand-700 transition hover:bg-brand-100"
               >
                 Aarav (Class 10 - Tech/AI & Budget Route)
               </button>
               <button
                 onClick={() => loadDemoProfile('demo-priya-class11')}
-                className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium rounded-lg border border-purple-200 transition"
+                className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 font-medium text-purple-700 transition hover:bg-purple-100"
               >
                 Priya (Class 11 - PCB / MBBS vs Biotech)
               </button>
               <button
                 onClick={() => loadDemoProfile('demo-rohan-class9')}
-                className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded-lg border border-emerald-200 transition"
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 font-medium text-emerald-700 transition hover:bg-emerald-100"
               >
                 Rohan (Class 9 - Sports + Defence)
               </button>
+              </div>
             </div>
+          </div>
+
+          <div className="relative">
+            <CareerPathVisual />
           </div>
         </div>
 
